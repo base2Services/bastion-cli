@@ -55,6 +55,21 @@ func CliMain() {
 					&cli.BoolFlag{
 						Name: "no-terminate",
 					},
+					&cli.BoolFlag{
+						Name: "ssh",
+					},
+					&cli.StringFlag{
+						Name:    "ssh-user",
+						Aliases: []string{"u"},
+						Value:   "ec2-user",
+					},
+					&cli.StringFlag{
+						Name:    "ssh-identity",
+						Aliases: []string{"id"},
+					},
+					&cli.BoolFlag{
+						Name: "ssh-verbose",
+					},
 				},
 			},
 			{
@@ -73,6 +88,21 @@ func CliMain() {
 					&cli.StringFlag{
 						Name:    "session-id",
 						Aliases: []string{"s"},
+					},
+					&cli.BoolFlag{
+						Name: "ssh",
+					},
+					&cli.StringFlag{
+						Name:    "ssh-user",
+						Aliases: []string{"u"},
+						Value:   "ec2-user",
+					},
+					&cli.StringFlag{
+						Name:    "ssh-identity",
+						Aliases: []string{"id"},
+					},
+					&cli.BoolFlag{
+						Name: "ssh-verbose",
 					},
 				},
 			},

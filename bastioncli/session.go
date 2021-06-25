@@ -3,6 +3,7 @@ package bastioncli
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -16,6 +17,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/urfave/cli/v2"
 )
+
+var sessionManagerPlugin = "session-manager-plugin"
 
 func CmdStartSession(c *cli.Context) error {
 	sess := session.Must(session.NewSession())
@@ -36,7 +39,41 @@ func CmdStartSession(c *cli.Context) error {
 		}
 	}
 
-	err = StartSession(sess, instanceId)
+	if c.Bool("ssh") {
+		err = StartSSHSession(sess, instanceId, c.String("ssh-user"), c.String("ssh-identity"), c.Bool("ssh-verbose"))
+		if err != nil {
+			return err
+		}
+	} else {
+		err = StartSession(sess, instanceId)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func CmdSSHSession(c *cli.Context) error {
+	sess := session.Must(session.NewSession())
+	var instanceId string
+	var err error
+
+	instanceId = c.String("instance-id")
+
+	if instanceId == "" {
+		sessionId := c.String("session-id")
+		if sessionId == "" {
+			return errors.New("one of --instance-id or --session-id must be supplied")
+		}
+
+		instanceId, err = GetInstanceIdBySessionId(sess, sessionId)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = StartSSHSession(sess, instanceId, c.String("ssh-user"), c.String("ssh-identity"), c.Bool("ssh-verbose"))
 	if err != nil {
 		return err
 	}
@@ -64,7 +101,63 @@ func StartSession(sess *session.Session, instanceId string) error {
 		return err
 	}
 
-	err = RunSubprocess("session-manager-plugin", string(JSONSession), *sess.Config.Region, "StartSession", "", string(JSONParameters), endpoint)
+	err = RunSubprocess(sessionManagerPlugin, string(JSONSession), *sess.Config.Region, "StartSession", "", string(JSONParameters), endpoint)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = TerminateSession(sess, *session.SessionId)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return nil
+}
+
+func StartSSHSession(sess *session.Session, instanceId string, sshUser string, sshIdentity string, sshVerbose bool) error {
+	docName := "AWS-StartSSHSession"
+	port := "22"
+	parameters := &ssm.StartSessionInput{
+		DocumentName: &docName,
+		Parameters:   map[string][]*string{"portNumber": {&port}},
+		Target:       &instanceId,
+	}
+
+	session, endpoint, err := GetStartSessionPayload(sess, parameters)
+	if err != nil {
+		return err
+	}
+
+	JSONSession, err := json.Marshal(&session)
+	if err != nil {
+		log.Println("Error marshaling start session response, ", err)
+		return err
+	}
+
+	JSONParameters, err := json.Marshal(parameters)
+	if err != nil {
+		log.Println("Error marshaling start session parameters, ", err)
+		return err
+	}
+
+	proxyCommand := fmt.Sprintf("ProxyCommand=%s '%s' %s %s %s '%s' %s",
+		sessionManagerPlugin, string(JSONSession), *sess.Config.Region,
+		"StartSession", "''", string(JSONParameters), endpoint)
+
+	sshConnection := fmt.Sprintf("%s@%s", sshUser, instanceId)
+
+	sshArgs := []string{"-o", proxyCommand, sshConnection}
+
+	if sshIdentity != "" {
+		sshArgs = append(sshArgs, "-i")
+		sshArgs = append(sshArgs, sshIdentity)
+	}
+
+	if sshVerbose {
+		sshArgs = append(sshArgs, "-vvv")
+	}
+
+	err = RunSubprocess("ssh", sshArgs...)
 	if err != nil {
 		log.Println(err)
 	}

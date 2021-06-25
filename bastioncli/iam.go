@@ -114,11 +114,14 @@ func CreateIAMPolicy(sess *session.Session) (string, error) {
 			{
 				Effect: "Allow",
 				Action: []string{
+					"ec2messages:GetMessages",
+					"ssm:ListAssociations",
+					"ssm:ListInstanceAssociations",
 					"ssm:UpdateInstanceInformation",
-					"ssmmessages:CreateControlChannel",
 					"ssmmessages:CreateDataChannel",
-					"ssmmessages:OpenControlChannel",
 					"ssmmessages:OpenDataChannel",
+					"ssmmessages:OpenControlChannel",
+					"ssmmessages:CreateControlChannel",
 				},
 				Resource: "*",
 			},
