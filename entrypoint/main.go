@@ -64,11 +64,8 @@ func CliMain() {
 						Value:   "ec2-user",
 					},
 					&cli.StringFlag{
-						Name:    "ssh-identity",
-						Aliases: []string{"id"},
-					},
-					&cli.BoolFlag{
-						Name: "ssh-verbose",
+						Name:    "ssh-opts",
+						Aliases: []string{"o"},
 					},
 				},
 			},
@@ -98,11 +95,8 @@ func CliMain() {
 						Value:   "ec2-user",
 					},
 					&cli.StringFlag{
-						Name:    "ssh-identity",
-						Aliases: []string{"id"},
-					},
-					&cli.BoolFlag{
-						Name: "ssh-verbose",
+						Name:    "ssh-opts",
+						Aliases: []string{"o"},
 					},
 				},
 			},

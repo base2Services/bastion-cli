@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -40,7 +41,7 @@ func CmdStartSession(c *cli.Context) error {
 	}
 
 	if c.Bool("ssh") {
-		err = StartSSHSession(sess, instanceId, c.String("ssh-user"), c.String("ssh-identity"), c.Bool("ssh-verbose"))
+		err = StartSSHSession(sess, instanceId, c.String("ssh-user"), c.String("ssh-opts"))
 		if err != nil {
 			return err
 		}
@@ -49,33 +50,6 @@ func CmdStartSession(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func CmdSSHSession(c *cli.Context) error {
-	sess := session.Must(session.NewSession())
-	var instanceId string
-	var err error
-
-	instanceId = c.String("instance-id")
-
-	if instanceId == "" {
-		sessionId := c.String("session-id")
-		if sessionId == "" {
-			return errors.New("one of --instance-id or --session-id must be supplied")
-		}
-
-		instanceId, err = GetInstanceIdBySessionId(sess, sessionId)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = StartSSHSession(sess, instanceId, c.String("ssh-user"), c.String("ssh-identity"), c.Bool("ssh-verbose"))
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -114,7 +88,7 @@ func StartSession(sess *session.Session, instanceId string) error {
 	return nil
 }
 
-func StartSSHSession(sess *session.Session, instanceId string, sshUser string, sshIdentity string, sshVerbose bool) error {
+func StartSSHSession(sess *session.Session, instanceId string, sshUser string, sshOpts string) error {
 	docName := "AWS-StartSSHSession"
 	port := "22"
 	parameters := &ssm.StartSessionInput{
@@ -148,13 +122,10 @@ func StartSSHSession(sess *session.Session, instanceId string, sshUser string, s
 
 	sshArgs := []string{"-o", proxyCommand, sshConnection}
 
-	if sshIdentity != "" {
-		sshArgs = append(sshArgs, "-i")
-		sshArgs = append(sshArgs, sshIdentity)
-	}
-
-	if sshVerbose {
-		sshArgs = append(sshArgs, "-vvv")
+	for _, opt := range strings.Split(sshOpts, " ") {
+		if opt != "" {
+			sshArgs = append(sshArgs, opt)
+		}
 	}
 
 	err = RunSubprocess("ssh", sshArgs...)

@@ -81,8 +81,6 @@ func CmdLaunch(c *cli.Context) error {
 		return err
 	}
 
-	log.Println("Waiting for bastion instance " + bastionInstanceId + " to run ...")
-
 	if c.Bool("ssh") {
 		// need to wait EC2 status ok to wait for userdata to complete
 		err = WaitForBastionStatusOK(sess, bastionInstanceId)
@@ -90,7 +88,7 @@ func CmdLaunch(c *cli.Context) error {
 			return err
 		}
 
-		err = StartSSHSession(sess, bastionInstanceId, c.String("ssh-user"), c.String("ssh-identity"), c.Bool("ssh-verbose"))
+		err = StartSSHSession(sess, bastionInstanceId, c.String("ssh-user"), c.String("ssh-opts"))
 		if err != nil {
 			return err
 		}
@@ -226,6 +224,8 @@ func WaitForBastionToRun(sess *session.Session, instanceId string) error {
 		},
 	}
 
+	log.Println("Waiting for bastion instance " + instanceId + " to reach a runing state ...")
+
 	err := client.WaitUntilInstanceRunning(input)
 	if err != nil {
 		return err
@@ -241,6 +241,8 @@ func WaitForBastionStatusOK(sess *session.Session, instanceId string) error {
 			aws.String(instanceId),
 		},
 	}
+
+	log.Println("Waiting for bastion instance " + instanceId + " to run ...")
 
 	err := client.WaitUntilInstanceStatusOk(input)
 	if err != nil {
