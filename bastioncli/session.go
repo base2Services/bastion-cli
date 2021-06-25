@@ -2,7 +2,6 @@ package bastioncli
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -26,19 +25,21 @@ func CmdStartSession(c *cli.Context) error {
 	var instanceId string
 	var err error
 
-	instanceId = c.String("instance-id")
-
-	if instanceId == "" {
-		sessionId := c.String("session-id")
-		if sessionId == "" {
-			return errors.New("one of --instance-id or --session-id must be supplied")
+	if c.String("instance-id") != "" {
+		instanceId = c.String("instance-id")
+	} else if c.String("session-id") != "" {
+		instanceId, err = GetInstanceIdBySessionId(sess, c.String("session-id"))
+		if err != nil {
+			return err
 		}
-
-		instanceId, err = GetInstanceIdBySessionId(sess, sessionId)
+	} else {
+		instanceId, err = SelectInstance(sess)
 		if err != nil {
 			return err
 		}
 	}
+
+	log.Printf("Starting session with instance %s", instanceId)
 
 	if c.Bool("ssh") {
 		err = StartSSHSession(sess, instanceId, c.String("ssh-user"), c.String("ssh-opts"))

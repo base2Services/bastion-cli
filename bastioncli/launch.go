@@ -242,7 +242,7 @@ func WaitForBastionStatusOK(sess *session.Session, instanceId string) error {
 		},
 	}
 
-	log.Println("Waiting for bastion instance " + instanceId + " to run ...")
+	log.Println("Waiting for bastion instance " + instanceId + " to reach an ok status ...")
 
 	err := client.WaitUntilInstanceStatusOk(input)
 	if err != nil {
