@@ -10,18 +10,22 @@ import (
 
 func CliMain() {
 	app := &cli.App{
-		Name:    "bastion-cli",
+		Name:    "bastion",
 		Usage:   "manage on-demand EC2 bastions",
 		Version: "0.1.0",
 		Commands: []*cli.Command{
 			{
 				Name:   "launch",
 				Usage:  "launch an new bastion instance",
-				Action: bastioncli.CmdLaunch,
+				Action: bastioncli.CmdLaunchLinuxBastion,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "region",
 						Aliases: []string{"r"},
+					},
+					&cli.StringFlag{
+						Name:  "ami",
+						Value: "amazon-linux",
 					},
 					&cli.StringFlag{
 						Name:    "subnet-id",
@@ -40,10 +44,6 @@ func CliMain() {
 						Aliases: []string{"t"},
 						Value:   "t3.micro",
 					},
-					&cli.StringFlag{
-						Name:    "public-key",
-						Aliases: []string{"k"},
-					},
 					&cli.IntFlag{
 						Name:    "expire-after",
 						Aliases: []string{"ex"},
@@ -59,6 +59,10 @@ func CliMain() {
 						Name: "ssh",
 					},
 					&cli.StringFlag{
+						Name:    "ssh-key",
+						Aliases: []string{"k"},
+					},
+					&cli.StringFlag{
 						Name:    "ssh-user",
 						Aliases: []string{"u"},
 						Value:   "ec2-user",
@@ -66,6 +70,38 @@ func CliMain() {
 					&cli.StringFlag{
 						Name:    "ssh-opts",
 						Aliases: []string{"o"},
+					},
+				},
+			},
+			{
+				Name:   "launch-windows",
+				Usage:  "launch an new windows bastion instance",
+				Action: bastioncli.CmdLaunchWindowsBastion,
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "region",
+						Aliases: []string{"r"},
+					},
+					&cli.StringFlag{
+						Name:  "ami",
+						Value: "windows",
+					},
+					&cli.StringFlag{
+						Name:    "subnet-id",
+						Aliases: []string{"s"},
+					},
+					&cli.StringFlag{
+						Name:    "environment-name",
+						Aliases: []string{"e"},
+					},
+					&cli.StringFlag{
+						Name:    "availabilty-zone",
+						Aliases: []string{"az"},
+					},
+					&cli.StringFlag{
+						Name:    "instance-type",
+						Aliases: []string{"t"},
+						Value:   "t3.small",
 					},
 				},
 			},

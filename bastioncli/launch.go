@@ -1,66 +1,65 @@
 package bastioncli
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ssm"
-	"github.com/aws/aws-sdk-go/service/sts"
 	uuid "github.com/satori/go.uuid"
 	"github.com/urfave/cli/v2"
 )
 
-func CmdLaunch(c *cli.Context) error {
-	id := uuid.NewV4().String()
+func CmdLaunchLinuxBastion(c *cli.Context) error {
+	var (
+		err               error
+		id                string
+		sess              *session.Session
+		ami               string
+		instanceProfile   string
+		sshKey            string
+		launchedBy        string
+		expire            bool
+		expireAfter       int
+		subnetId          string
+		instanceType      string
+		userdata          string
+		bastionInstanceId string
+	)
 
-	log.Println("Session Id: " + id)
+	id = GenerateSessionId()
+	sess = session.Must(session.NewSession())
 
-	sess := session.Must(session.NewSession())
-
-	ami, err := GetAmi(sess)
+	ami, err = GetAndValidateAmi(sess, c.String("ami"))
 	if err != nil {
 		return err
 	}
 
-	instanceProfile, err := GetIAMInstanceProfile(sess)
+	instanceProfile, err = GetIAMInstanceProfile(sess)
 	if err != nil {
 		return err
 	}
 
-	publicKeyFile := c.String("public-key")
-	var publicKey string
-
-	if publicKeyFile != "" {
-		b, err := ioutil.ReadFile(publicKeyFile)
+	if c.String("public-key") != "" {
+		sshKey, err = ReadAndValidatePublicKey(c.String("ssh-key"))
 		if err != nil {
 			return err
 		}
-
-		publicKey = string(b)
-		if strings.Contains(publicKey, "PRIVATE") {
-			return errors.New("key supplied is a private key")
-		}
 	}
 
-	launchedBy, err := GetIdentity(sess)
+	launchedBy, err = GetIdentity(sess)
 	if err != nil {
 		return err
 	}
 
-	expire := true
-	expireAfter := c.Int("expire-after")
+	expireAfter = c.Int("expire-after")
 	if c.Bool("no-expire") {
 		expire = false
 	}
 
-	subnetId := c.String("subnet-id")
+	subnetId = c.String("subnet-id")
 	if subnetId == "" {
 		availabilityZone := c.String("availabilty-zone")
 		environmentName := c.String("environment-name")
@@ -74,9 +73,11 @@ func CmdLaunch(c *cli.Context) error {
 		}
 	}
 
-	instanceType := c.String("instance-type")
+	instanceType = c.String("instance-type")
 
-	bastionInstanceId, err := StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, publicKey, launchedBy, expire, expireAfter)
+	userdata = BuildLinuxUserdata(sshKey, expire, expireAfter)
+
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata)
 	if err != nil {
 		return err
 	}
@@ -114,6 +115,74 @@ func CmdLaunch(c *cli.Context) error {
 	return nil
 }
 
+func CmdLaunchWindowsBastion(c *cli.Context) error {
+	var (
+		err               error
+		id                string
+		sess              *session.Session
+		ami               string
+		instanceProfile   string
+		launchedBy        string
+		subnetId          string
+		instanceType      string
+		userdata          string
+		bastionInstanceId string
+	)
+
+	id = GenerateSessionId()
+	sess = session.Must(session.NewSession())
+
+	ami, err = GetAndValidateAmi(sess, c.String("ami"))
+	if err != nil {
+		return err
+	}
+
+	instanceProfile, err = GetIAMInstanceProfile(sess)
+	if err != nil {
+		return err
+	}
+
+	launchedBy, err = GetIdentity(sess)
+	if err != nil {
+		return err
+	}
+
+	subnetId = c.String("subnet-id")
+	if subnetId == "" {
+		availabilityZone := c.String("availabilty-zone")
+		environmentName := c.String("environment-name")
+		if environmentName == "" {
+			return errors.New("one of --subnet-id or --environment-name must be supplied")
+		}
+
+		subnetId, err = GetSubnetFromEnvironment(sess, environmentName, availabilityZone)
+		if err != nil {
+			return err
+		}
+	}
+
+	instanceType = c.String("instance-type")
+
+	userdata = BuildWindowsUserdata()
+
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata)
+	if err != nil {
+		return err
+	}
+
+	err = WaitForBastionToRun(sess, bastionInstanceId)
+	if err != nil {
+		return err
+	}
+
+	err = StartSession(sess, bastionInstanceId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func CmdTerminateInstance(c *cli.Context) error {
 	sess := session.Must(session.NewSession())
 
@@ -130,16 +199,31 @@ func CmdTerminateInstance(c *cli.Context) error {
 	return nil
 }
 
-func StartEc2(id string, sess *session.Session, ami string, instanceProfile string, subnetId string, instanceType string, publicKey string, launchedBy string, expire bool, expireAfter int) (string, error) {
-	client := ec2.New(sess)
+func GenerateSessionId() string {
+	return uuid.NewV4().String()
+}
 
-	log.Println("Launching " + instanceType + " bastion in subnet " + subnetId)
+func ReadAndValidatePublicKey(filePath string) (string, error) {
+	b, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return "", err
+	}
 
+	publicKey := string(b)
+
+	if !strings.Contains(publicKey, "ssh-rsa") {
+		return "", errors.New("key is not a valid OpenSSH public key")
+	}
+
+	return publicKey, nil
+}
+
+func BuildLinuxUserdata(sshKey string, expire bool, expireAfter int) string {
 	var userdata []string
 	userdata = append(userdata, "#!/bin/bash\n")
 
-	if publicKey != "" {
-		userdata = append(userdata, "echo \""+publicKey+"\" > /home/ec2-user/.ssh/authorized_keys\n")
+	if sshKey != "" {
+		userdata = append(userdata, "echo \""+sshKey+"\" > /home/ec2-user/.ssh/authorized_keys\n")
 	}
 
 	if expire {
@@ -148,136 +232,12 @@ func StartEc2(id string, sess *session.Session, ami string, instanceProfile stri
 		userdata = append(userdata, line)
 	}
 
-	userdataB64 := base64.StdEncoding.EncodeToString([]byte(strings.Join(userdata, "")))
-	input := &ec2.RunInstancesInput{
-		ImageId:      aws.String(ami),
-		InstanceType: aws.String(instanceType),
-		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
-			Name: aws.String(instanceProfile),
-		},
-		SubnetId:                          aws.String(subnetId),
-		MinCount:                          aws.Int64(1),
-		MaxCount:                          aws.Int64(1),
-		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
-		UserData:                          aws.String(userdataB64),
-		TagSpecifications: []*ec2.TagSpecification{
-			{
-				ResourceType: aws.String("instance"),
-				Tags: []*ec2.Tag{
-					{
-						Key:   aws.String("Name"),
-						Value: aws.String("bastion-" + id),
-					},
-					{
-						Key:   aws.String("bastion:session-id"),
-						Value: aws.String(id),
-					},
-					{
-						Key:   aws.String("bastion:expire"),
-						Value: aws.String(fmt.Sprint(expire)),
-					},
-					{
-						Key:   aws.String("bastion:expire-after"),
-						Value: aws.String(fmt.Sprint(expireAfter) + " minutes"),
-					},
-					{
-						Key:   aws.String("bastion:launched-by"),
-						Value: aws.String(launchedBy),
-					},
-				},
-			},
-		},
-	}
-
-	instance, err := client.RunInstances(input)
-	if err != nil {
-		return "", err
-	}
-
-	instanceId := *instance.Instances[0].InstanceId
-
-	return instanceId, nil
+	return strings.Join(userdata, "")
 }
 
-func TerminateEC2(sess *session.Session, instanceId string) error {
-	client := ec2.New(sess)
-	input := &ec2.TerminateInstancesInput{
-		InstanceIds: []*string{
-			aws.String(instanceId),
-		},
-	}
-
-	log.Println("Terminating bastion " + instanceId)
-	_, err := client.TerminateInstances(input)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func WaitForBastionToRun(sess *session.Session, instanceId string) error {
-	client := ec2.New(sess)
-	input := &ec2.DescribeInstancesInput{
-		InstanceIds: []*string{
-			aws.String(instanceId),
-		},
-	}
-
-	log.Println("Waiting for bastion instance " + instanceId + " to reach a runing state ...")
-
-	err := client.WaitUntilInstanceRunning(input)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func WaitForBastionStatusOK(sess *session.Session, instanceId string) error {
-	client := ec2.New(sess)
-	input := &ec2.DescribeInstanceStatusInput{
-		InstanceIds: []*string{
-			aws.String(instanceId),
-		},
-	}
-
-	log.Println("Waiting for bastion instance " + instanceId + " to reach an ok status ...")
-
-	err := client.WaitUntilInstanceStatusOk(input)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func GetAmi(sess *session.Session) (string, error) {
-	client := ssm.New(sess)
-	input := &ssm.GetParameterInput{
-		Name: aws.String("/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"),
-	}
-
-	result, err := client.GetParameter(input)
-	if err != nil {
-		return "", err
-	}
-
-	value := *result.Parameter.Value
-
-	return value, nil
-}
-
-func GetIdentity(sess *session.Session) (string, error) {
-	client := sts.New(sess)
-	callerId, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
-	if err != nil {
-		log.Println("failed to retrieve user identity from sts, ", err)
-		return "", err
-	}
-
-	identity := *callerId.UserId
-	identityParts := strings.Split(identity, ":")
-
-	return identityParts[len(identityParts)-1], nil
+func BuildWindowsUserdata() string {
+	var userdata []string
+	userdata = append(userdata, "<powershell>\n")
+	userdata = append(userdata, "</powershell>\n")
+	return strings.Join(userdata, "")
 }
