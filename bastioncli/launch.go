@@ -81,7 +81,7 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 
 	instanceType = c.String("instance-type")
 
-	userdata = BuildLinuxUserdata(sshKey, expire, expireAfter)
+	userdata = BuildLinuxUserdata(sshKey, expire, expireAfter, c.String("efs"))
 
 	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata, keyName, spot)
 	if err != nil {
@@ -276,21 +276,25 @@ func ReadAndValidatePublicKey(filePath string) (string, error) {
 	return publicKey, nil
 }
 
-func BuildLinuxUserdata(sshKey string, expire bool, expireAfter int) string {
+func BuildLinuxUserdata(sshKey string, expire bool, expireAfter int, efs string) string {
 	userdata := []string{"#!/bin/bash\n"}
-
-	if sshKey != "" {
-		sshKeyLine := fmt.Sprintf("echo \"%s\" > /home/ec2-user/.ssh/authorized_keys\n", sshKey)
-		userdata = append(userdata, sshKeyLine)
-	}
 
 	if expire {
 		log.Printf("Bastion will expire after %v minutes", expireAfter)
-		line := fmt.Sprintf("echo \"sudo halt\" | at now + %d minutes", expireAfter)
-		userdata = append(userdata, line)
+		userdata = append(userdata, fmt.Sprintf("echo \"sudo halt\" | at now + %d minutes", expireAfter))
 	}
 
-	return strings.Join(userdata, "")
+	if sshKey != "" {
+		userdata = append(userdata, fmt.Sprintf("echo \"%s\" > /home/ec2-user/.ssh/authorized_keys", sshKey))
+	}
+
+	if efs != "" {
+		userdata = append(userdata, "yum install -y amazon-efs-utils")
+		userdata = append(userdata, "mkdir /efs")
+		userdata = append(userdata, fmt.Sprintf("mount -t efs %s /efs/", efs))
+	}
+
+	return strings.Join(userdata, "\n")
 }
 
 func BuildWindowsUserdata() string {

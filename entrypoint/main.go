@@ -43,6 +43,9 @@ func CliMain() {
 					&cli.BoolFlag{
 						Name: "no-spot",
 					},
+					&cli.StringFlag{
+						Name: "efs",
+					},
 					&cli.IntFlag{
 						Name:    "expire-after",
 						Aliases: []string{"ex"},
