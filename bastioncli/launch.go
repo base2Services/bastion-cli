@@ -27,6 +27,7 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 		instanceType      string
 		keyName           string
 		userdata          string
+		spot              bool
 		bastionInstanceId string
 	)
 
@@ -58,8 +59,14 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 	}
 
 	expireAfter = c.Int("expire-after")
+	expire = true
 	if c.Bool("no-expire") {
 		expire = false
+	}
+
+	spot = true
+	if c.Bool("no-spot") {
+		spot = false
 	}
 
 	subnetId = c.String("subnet-id")
@@ -76,7 +83,7 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 
 	userdata = BuildLinuxUserdata(sshKey, expire, expireAfter)
 
-	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata, keyName)
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata, keyName, spot)
 	if err != nil {
 		return err
 	}
@@ -127,6 +134,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 		keypair           string
 		keyName           string
 		userdata          string
+		spot              bool
 		bastionInstanceId string
 	)
 
@@ -148,6 +156,11 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 	launchedBy, err = LookupUserIdentity(sess)
 	if err != nil {
 		return err
+	}
+
+	spot = true
+	if c.Bool("no-spot") {
+		spot = false
 	}
 
 	subnetId = c.String("subnet-id")
@@ -180,7 +193,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 
 	userdata = BuildWindowsUserdata()
 
-	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata, keyName)
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata, keyName, spot)
 	if err != nil {
 		return err
 	}

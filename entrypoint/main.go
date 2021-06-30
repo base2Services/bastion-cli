@@ -36,6 +36,9 @@ func CliMain() {
 						Aliases: []string{"t"},
 						Value:   "t3.micro",
 					},
+					&cli.BoolFlag{
+						Name: "no-spot",
+					},
 					&cli.IntFlag{
 						Name:    "expire-after",
 						Aliases: []string{"ex"},
