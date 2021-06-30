@@ -41,8 +41,8 @@ The bastions are tagged with the following tags:
 
 | Key | Value
 | --- | ---
-| Name | bastion-<session-id>
-| bastion:session-id | bastion-<session-id>
+| Name | bastion-[session-id]
+| bastion:session-id | [session-id]
 | bastion:launched-by | IAM user identify of the bastion launcher
 
 #### IAM Instance Profile
