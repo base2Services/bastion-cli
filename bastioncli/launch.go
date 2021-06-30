@@ -251,15 +251,8 @@ func CmdTerminateInstance(c *cli.Context) error {
 	}
 
 	parameterName := GetDefaultKeyPairParameterName(c.String("session-id"))
-	err = DeleteKeyPairParameter(sess, parameterName)
-	if err != nil {
-		return err
-	}
-
-	err = DeleteKeyPair(sess, c.String("session-id"))
-	if err != nil {
-		return err
-	}
+	_ = DeleteKeyPairParameter(sess, parameterName)
+	_ = DeleteKeyPair(sess, c.String("session-id"))
 
 	return nil
 }
