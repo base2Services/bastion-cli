@@ -25,11 +25,14 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 		expireAfter       int
 		subnetId          string
 		instanceType      string
+		keyName           string
 		userdata          string
 		bastionInstanceId string
 	)
 
 	id = GenerateSessionId()
+	log.Println("bastion session id: " + id)
+
 	sess = session.Must(session.NewSession())
 
 	ami, err = GetAndValidateAmi(sess, c.String("ami"))
@@ -49,7 +52,7 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 		}
 	}
 
-	launchedBy, err = GetIdentity(sess)
+	launchedBy, err = LookupUserIdentity(sess)
 	if err != nil {
 		return err
 	}
@@ -77,7 +80,7 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 
 	userdata = BuildLinuxUserdata(sshKey, expire, expireAfter)
 
-	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata)
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata, keyName)
 	if err != nil {
 		return err
 	}
@@ -125,11 +128,15 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 		launchedBy        string
 		subnetId          string
 		instanceType      string
+		keypair           string
+		keyName           string
 		userdata          string
 		bastionInstanceId string
 	)
 
 	id = GenerateSessionId()
+	log.Println("bastion session id: " + id)
+
 	sess = session.Must(session.NewSession())
 
 	ami, err = GetAndValidateAmi(sess, c.String("ami"))
@@ -142,7 +149,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 		return err
 	}
 
-	launchedBy, err = GetIdentity(sess)
+	launchedBy, err = LookupUserIdentity(sess)
 	if err != nil {
 		return err
 	}
@@ -163,21 +170,63 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 
 	instanceType = c.String("instance-type")
 
+	if c.Bool("rdp") {
+		log.Println("creating keypair for rdp password decryption ...")
+
+		keyName, keypair, err = CreateKeyPair(sess, id)
+		if err != nil {
+			return err
+		}
+
+		parameterName := GetDefaultKeyPairParameterName(id)
+
+		err = PutKeyPairParameter(sess, parameterName, keypair)
+		if err != nil {
+			return err
+		}
+	}
+
 	userdata = BuildWindowsUserdata()
 
-	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata)
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata, keyName)
 	if err != nil {
 		return err
 	}
 
-	err = WaitForBastionToRun(sess, bastionInstanceId)
-	if err != nil {
-		return err
-	}
+	if c.Bool("rdp") {
+		err := WaitForBastionStatusOK(sess, bastionInstanceId)
+		if err != nil {
+			return err
+		}
 
-	err = StartSession(sess, bastionInstanceId)
-	if err != nil {
-		return err
+		passwordData, err := GetWindowsPasswordData(sess, bastionInstanceId)
+		if err != nil {
+			return err
+		}
+
+		password, err := DecodePassword(keypair, passwordData)
+		if err != nil {
+			return err
+		}
+
+		CopyPasswordToClipBoard(password)
+
+		localRdpPort := GetRandomRDPPort()
+
+		err = StartRDPSession(sess, bastionInstanceId, localRdpPort)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = WaitForBastionToRun(sess, bastionInstanceId)
+		if err != nil {
+			return err
+		}
+
+		err = StartSession(sess, bastionInstanceId)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -192,6 +241,17 @@ func CmdTerminateInstance(c *cli.Context) error {
 	}
 
 	err = TerminateEC2(sess, instanceId)
+	if err != nil {
+		return err
+	}
+
+	parameterName := GetDefaultKeyPairParameterName(c.String("session-id"))
+	err = DeleteKeyPairParameter(sess, parameterName)
+	if err != nil {
+		return err
+	}
+
+	err = DeleteKeyPair(sess, c.String("session-id"))
 	if err != nil {
 		return err
 	}
@@ -219,11 +279,11 @@ func ReadAndValidatePublicKey(filePath string) (string, error) {
 }
 
 func BuildLinuxUserdata(sshKey string, expire bool, expireAfter int) string {
-	var userdata []string
-	userdata = append(userdata, "#!/bin/bash\n")
+	userdata := []string{"#!/bin/bash\n"}
 
 	if sshKey != "" {
-		userdata = append(userdata, "echo \""+sshKey+"\" > /home/ec2-user/.ssh/authorized_keys\n")
+		sshKeyLine := fmt.Sprintf("echo \"%s\" > /home/ec2-user/.ssh/authorized_keys\n", sshKey)
+		userdata = append(userdata, sshKeyLine)
 	}
 
 	if expire {
@@ -236,8 +296,7 @@ func BuildLinuxUserdata(sshKey string, expire bool, expireAfter int) string {
 }
 
 func BuildWindowsUserdata() string {
-	var userdata []string
-	userdata = append(userdata, "<powershell>\n")
-	userdata = append(userdata, "</powershell>\n")
+	userdata := []string{"<powershell>\n"}
+	userdata = append(userdata, "</powershell>")
 	return strings.Join(userdata, "")
 }

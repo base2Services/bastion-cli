@@ -191,7 +191,7 @@ func EnrichInstancesDetail(sess *session.Session, instances []*string) ([]string
 	return instanceDetail, nil
 }
 
-func GetIdentity(sess *session.Session) (string, error) {
+func LookupUserIdentity(sess *session.Session) (string, error) {
 	client := sts.New(sess)
 	callerId, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {

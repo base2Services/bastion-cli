@@ -37,7 +37,7 @@ type Principal struct {
 	Service []string
 }
 
-var profileName = "BastionCliSessionManager"
+const profileName = "BastionCliSessionManager"
 
 func GetIAMInstanceProfile(sess *session.Session) (string, error) {
 	err := CreateIAMRequirementsIfNotExist(sess)
@@ -75,6 +75,11 @@ func CreateIAMRequirementsIfNotExist(sess *session.Session) error {
 	}
 
 	err = CreateIAMInstanceProfile(sess)
+	if err != nil {
+		return err
+	}
+
+	err = WaitForInstanceProfileToCreate(sess)
 	if err != nil {
 		return err
 	}
@@ -231,6 +236,22 @@ func CreateIAMInstanceProfile(sess *session.Session) error {
 
 	if err != nil {
 		fmt.Println("Error attaching role to the IAM Instance Profile, ", err)
+		return err
+	}
+
+	return nil
+}
+
+func WaitForInstanceProfileToCreate(sess *session.Session) error {
+	client := iam.New(sess)
+	input := &iam.GetInstanceProfileInput{
+		InstanceProfileName: aws.String(profileName),
+	}
+
+	log.Println("Waiting for iam profile to create ...")
+
+	err := client.WaitUntilInstanceProfileExists(input)
+	if err != nil {
 		return err
 	}
 

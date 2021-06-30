@@ -103,6 +103,9 @@ func CliMain() {
 						Aliases: []string{"t"},
 						Value:   "t3.small",
 					},
+					&cli.BoolFlag{
+						Name: "rdp",
+					},
 				},
 			},
 			{
@@ -133,6 +136,12 @@ func CliMain() {
 					&cli.StringFlag{
 						Name:    "ssh-opts",
 						Aliases: []string{"o"},
+					},
+					&cli.BoolFlag{
+						Name: "rdp",
+					},
+					&cli.StringFlag{
+						Name: "keypair-parameter",
 					},
 				},
 			},

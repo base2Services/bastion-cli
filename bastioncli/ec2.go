@@ -3,13 +3,15 @@ package bastioncli
 import (
 	"encoding/base64"
 	"log"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func StartEc2(id string, sess *session.Session, ami string, instanceProfile string, subnetId string, instanceType string, launchedBy string, userdata string) (string, error) {
+func StartEc2(id string, sess *session.Session, ami string, instanceProfile string, subnetId string, instanceType string, launchedBy string, userdata string, keyName string) (string, error) {
 	client := ec2.New(sess)
 
 	input := &ec2.RunInstancesInput{
@@ -42,6 +44,10 @@ func StartEc2(id string, sess *session.Session, ami string, instanceProfile stri
 				},
 			},
 		},
+	}
+
+	if keyName != "" {
+		input.KeyName = aws.String(keyName)
 	}
 
 	log.Println("Launching " + instanceType + " bastion in subnet " + subnetId)
@@ -102,6 +108,26 @@ func WaitForBastionStatusOK(sess *session.Session, instanceId string) error {
 	log.Println("Waiting for bastion instance " + instanceId + " to reach an ok status ...")
 
 	err := client.WaitUntilInstanceStatusOk(input)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func WaitForWindowsBastionPassword(sess *session.Session, instanceId string) error {
+	client := ec2.New(sess)
+	input := &ec2.GetPasswordDataInput{
+		InstanceId: aws.String(instanceId),
+	}
+
+	log.Println("Waiting for bastion instance " + instanceId + " windows password to become available ...")
+
+	err := client.WaitUntilPasswordDataAvailableWithContext(
+		aws.BackgroundContext(),
+		input,
+		request.WithWaiterMaxAttempts(30),
+		request.WithWaiterDelay(request.ConstantWaiterDelay(15*time.Second)))
 	if err != nil {
 		return err
 	}

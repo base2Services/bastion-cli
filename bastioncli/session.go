@@ -23,6 +23,7 @@ var sessionManagerPlugin = "session-manager-plugin"
 func CmdStartSession(c *cli.Context) error {
 	sess := session.Must(session.NewSession())
 	var instanceId string
+	var parameterName string
 	var err error
 
 	if c.String("instance-id") != "" {
@@ -43,6 +44,39 @@ func CmdStartSession(c *cli.Context) error {
 
 	if c.Bool("ssh") {
 		err = StartSSHSession(sess, instanceId, c.String("ssh-user"), c.String("ssh-opts"))
+		if err != nil {
+			return err
+		}
+	} else if c.Bool("rdp") {
+		localRdpPort := GetRandomRDPPort()
+
+		if c.String("session-id") != "" {
+			parameterName = GetDefaultKeyPairParameterName(c.String("session-id"))
+		} else if c.String("keypair-parameter") != "" {
+			parameterName = c.String("keypair-parameter")
+		}
+
+		if parameterName != "" {
+			keypair, err := GetKeyPairParameter(sess, parameterName)
+			if err != nil {
+				return err
+			}
+
+			passwordData, err := GetWindowsPasswordData(sess, instanceId)
+			if err != nil {
+				return err
+			}
+
+			password, err := DecodePassword(keypair, passwordData)
+			if err != nil {
+				return err
+			}
+
+			log.Printf("Windows Password: %s", password)
+			CopyPasswordToClipBoard(password)
+		}
+
+		err = StartRDPSession(sess, instanceId, localRdpPort)
 		if err != nil {
 			return err
 		}
@@ -130,6 +164,53 @@ func StartSSHSession(sess *session.Session, instanceId string, sshUser string, s
 	}
 
 	err = RunSubprocess("ssh", sshArgs...)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = TerminateSession(sess, *session.SessionId)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return nil
+}
+
+func StartRDPSession(sess *session.Session, instanceId string, localRdpPort int) error {
+	docName := "AWS-StartPortForwardingSession"
+	localPort := fmt.Sprintf("%d", localRdpPort)
+	port := "3389"
+	parameters := &ssm.StartSessionInput{
+		DocumentName: &docName,
+		Parameters: map[string][]*string{
+			"localPortNumber": {&localPort},
+			"portNumber":      {&port},
+		},
+		Target: &instanceId,
+	}
+
+	session, endpoint, err := GetStartSessionPayload(sess, parameters)
+	if err != nil {
+		return err
+	}
+
+	JSONSession, err := json.Marshal(&session)
+	if err != nil {
+		log.Println("Error marshaling start session response, ", err)
+		return err
+	}
+
+	JSONParameters, err := json.Marshal(parameters)
+	if err != nil {
+		log.Println("Error marshaling start session parameters, ", err)
+		return err
+	}
+
+	// open in a goroutine to wait for the session manager session
+	//to start before starting the remote desktop client
+	go OpenRemoteDesktopClient(localRdpPort)
+
+	err = RunSubprocess(sessionManagerPlugin, string(JSONSession), *sess.Config.Region, "StartSession", "", string(JSONParameters), endpoint)
 	if err != nil {
 		log.Println(err)
 	}
