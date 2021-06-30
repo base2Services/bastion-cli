@@ -12,7 +12,7 @@ func CliMain() {
 	app := &cli.App{
 		Name:    "bastion",
 		Usage:   "manage on-demand EC2 bastions",
-		Version: "0.1.0",
+		Version: "0.1.1",
 		Commands: []*cli.Command{
 			{
 				Name:   "launch",
