@@ -46,7 +46,7 @@ func CmdStartSession(c *cli.Context) error {
 	log.Printf("Starting session with instance %s", instanceId)
 
 	if c.Bool("ssh") {
-		err = StartSSHSession(sess, instanceId, c.String("ssh-user"), c.String("ssh-opts"))
+		err = StartSSHSession(sess, instanceId, c.String("ssh-user"), c.String("ssh-opts"), c.String("profile"))
 		if err != nil {
 			return err
 		}
@@ -79,12 +79,12 @@ func CmdStartSession(c *cli.Context) error {
 			CopyPasswordToClipBoard(password)
 		}
 
-		err = StartRDPSession(sess, instanceId, localRdpPort)
+		err = StartRDPSession(sess, instanceId, localRdpPort, c.String("profile"))
 		if err != nil {
 			return err
 		}
 	} else {
-		err = StartSession(sess, instanceId)
+		err = StartSession(sess, instanceId, c.String("profile"))
 		if err != nil {
 			return err
 		}
@@ -93,7 +93,7 @@ func CmdStartSession(c *cli.Context) error {
 	return nil
 }
 
-func StartSession(sess *session.Session, instanceId string) error {
+func StartSession(sess *session.Session, instanceId string, awsProfile string) error {
 
 	parameters := &ssm.StartSessionInput{Target: &instanceId}
 	session, endpoint, err := GetStartSessionPayload(sess, parameters)
@@ -113,7 +113,7 @@ func StartSession(sess *session.Session, instanceId string) error {
 		return err
 	}
 
-	err = RunSubprocess(sessionManagerPlugin, string(JSONSession), *sess.Config.Region, "StartSession", "", string(JSONParameters), endpoint)
+	err = RunSubprocess(sessionManagerPlugin, string(JSONSession), *sess.Config.Region, "StartSession", awsProfile, string(JSONParameters), endpoint)
 	if err != nil {
 		log.Println(err)
 	}
@@ -126,7 +126,7 @@ func StartSession(sess *session.Session, instanceId string) error {
 	return nil
 }
 
-func StartSSHSession(sess *session.Session, instanceId string, sshUser string, sshOpts string) error {
+func StartSSHSession(sess *session.Session, instanceId string, sshUser string, sshOpts string, awsProfile string) error {
 	docName := "AWS-StartSSHSession"
 	port := "22"
 	parameters := &ssm.StartSessionInput{
@@ -152,9 +152,13 @@ func StartSSHSession(sess *session.Session, instanceId string, sshUser string, s
 		return err
 	}
 
+	if awsProfile == "" {
+		awsProfile = "''"
+	}
+
 	proxyCommand := fmt.Sprintf("ProxyCommand=%s '%s' %s %s %s '%s' %s",
 		sessionManagerPlugin, string(JSONSession), *sess.Config.Region,
-		"StartSession", "''", string(JSONParameters), endpoint)
+		"StartSession", awsProfile, string(JSONParameters), endpoint)
 
 	sshConnection := fmt.Sprintf("%s@%s", sshUser, instanceId)
 
@@ -179,7 +183,7 @@ func StartSSHSession(sess *session.Session, instanceId string, sshUser string, s
 	return nil
 }
 
-func StartRDPSession(sess *session.Session, instanceId string, localRdpPort int) error {
+func StartRDPSession(sess *session.Session, instanceId string, localRdpPort int, awsProfile string) error {
 	docName := "AWS-StartPortForwardingSession"
 	localPort := fmt.Sprintf("%d", localRdpPort)
 	port := "3389"
@@ -213,7 +217,7 @@ func StartRDPSession(sess *session.Session, instanceId string, localRdpPort int)
 	//to start before starting the remote desktop client
 	go OpenRemoteDesktopClient(localRdpPort)
 
-	err = RunSubprocess(sessionManagerPlugin, string(JSONSession), *sess.Config.Region, "StartSession", "", string(JSONParameters), endpoint)
+	err = RunSubprocess(sessionManagerPlugin, string(JSONSession), *sess.Config.Region, "StartSession", awsProfile, string(JSONParameters), endpoint)
 	if err != nil {
 		log.Println(err)
 	}

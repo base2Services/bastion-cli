@@ -46,7 +46,7 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 		return err
 	}
 
-	if c.String("public-key") != "" {
+	if c.String("ssh-key") != "" {
 		sshKey, err = ReadAndValidatePublicKey(c.String("ssh-key"))
 		if err != nil {
 			return err
@@ -81,7 +81,7 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 
 	instanceType = c.String("instance-type")
 
-	userdata = BuildLinuxUserdata(sshKey, expire, expireAfter, c.String("efs"))
+	userdata = BuildLinuxUserdata(sshKey, c.String("ssh-user"), expire, expireAfter, c.String("efs"))
 
 	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata, keyName, spot)
 	if err != nil {
@@ -95,7 +95,7 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 			return err
 		}
 
-		err = StartSSHSession(sess, bastionInstanceId, c.String("ssh-user"), c.String("ssh-opts"))
+		err = StartSSHSession(sess, bastionInstanceId, c.String("ssh-user"), c.String("ssh-opts"), c.String("profile"))
 		if err != nil {
 			return err
 		}
@@ -105,7 +105,7 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 			return err
 		}
 
-		err = StartSession(sess, bastionInstanceId)
+		err = StartSession(sess, bastionInstanceId, c.String("profile"))
 		if err != nil {
 			return err
 		}
@@ -218,7 +218,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 
 		localRdpPort := GetRandomRDPPort()
 
-		err = StartRDPSession(sess, bastionInstanceId, localRdpPort)
+		err = StartRDPSession(sess, bastionInstanceId, localRdpPort, c.String("profile"))
 		if err != nil {
 			return err
 		}
@@ -228,7 +228,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 			return err
 		}
 
-		err = StartSession(sess, bastionInstanceId)
+		err = StartSession(sess, bastionInstanceId, c.String("profile"))
 		if err != nil {
 			return err
 		}
@@ -276,25 +276,25 @@ func ReadAndValidatePublicKey(filePath string) (string, error) {
 	return publicKey, nil
 }
 
-func BuildLinuxUserdata(sshKey string, expire bool, expireAfter int, efs string) string {
+func BuildLinuxUserdata(sshKey string, sshUser string, expire bool, expireAfter int, efs string) string {
 	userdata := []string{"#!/bin/bash\n"}
+
+	if sshKey != "" {
+		userdata = append(userdata, fmt.Sprintf("echo \"%s\" > /home/%s/.ssh/authorized_keys\n", sshKey, sshUser))
+	}
+
+	if efs != "" {
+		userdata = append(userdata, "yum install -y amazon-efs-utils\n")
+		userdata = append(userdata, "mkdir /efs\n")
+		userdata = append(userdata, fmt.Sprintf("mount -t efs %s /efs/\n", efs))
+	}
 
 	if expire {
 		log.Printf("Bastion will expire after %v minutes", expireAfter)
 		userdata = append(userdata, fmt.Sprintf("echo \"sudo halt\" | at now + %d minutes", expireAfter))
 	}
 
-	if sshKey != "" {
-		userdata = append(userdata, fmt.Sprintf("echo \"%s\" > /home/ec2-user/.ssh/authorized_keys", sshKey))
-	}
-
-	if efs != "" {
-		userdata = append(userdata, "yum install -y amazon-efs-utils")
-		userdata = append(userdata, "mkdir /efs")
-		userdata = append(userdata, fmt.Sprintf("mount -t efs %s /efs/", efs))
-	}
-
-	return strings.Join(userdata, "\n")
+	return strings.Join(userdata, "")
 }
 
 func BuildWindowsUserdata() string {
