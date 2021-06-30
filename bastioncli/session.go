@@ -21,10 +21,13 @@ import (
 var sessionManagerPlugin = "session-manager-plugin"
 
 func CmdStartSession(c *cli.Context) error {
-	sess := session.Must(session.NewSession())
-	var instanceId string
-	var parameterName string
-	var err error
+	var (
+		instanceId    string
+		parameterName string
+		err           error
+	)
+
+	sess := SetupAWSSession(c.String("region"), c.String("profile"))
 
 	if c.String("instance-id") != "" {
 		instanceId = c.String("instance-id")

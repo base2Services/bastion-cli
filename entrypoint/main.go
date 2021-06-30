@@ -24,6 +24,10 @@ func CliMain() {
 						Aliases: []string{"r"},
 					},
 					&cli.StringFlag{
+						Name:    "profile",
+						Aliases: []string{"p"},
+					},
+					&cli.StringFlag{
 						Name:  "ami",
 						Value: "amazon-linux",
 					},
@@ -78,6 +82,10 @@ func CliMain() {
 						Aliases: []string{"r"},
 					},
 					&cli.StringFlag{
+						Name:    "profile",
+						Aliases: []string{"p"},
+					},
+					&cli.StringFlag{
 						Name:  "ami",
 						Value: "windows",
 					},
@@ -103,6 +111,10 @@ func CliMain() {
 					&cli.StringFlag{
 						Name:    "region",
 						Aliases: []string{"r"},
+					},
+					&cli.StringFlag{
+						Name:    "profile",
+						Aliases: []string{"p"},
 					},
 					&cli.StringFlag{
 						Name:    "instance-id",
@@ -140,6 +152,10 @@ func CliMain() {
 					&cli.StringFlag{
 						Name:    "region",
 						Aliases: []string{"r"},
+					},
+					&cli.StringFlag{
+						Name:    "profile",
+						Aliases: []string{"p"},
 					},
 					&cli.StringFlag{
 						Name:     "session-id",

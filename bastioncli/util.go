@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -31,4 +32,42 @@ func LookupUserIdentity(sess *session.Session) (string, error) {
 	identityParts := strings.Split(identity, ":")
 
 	return identityParts[len(identityParts)-1], nil
+}
+
+func SetupAWSSession(region string, profile string) *session.Session {
+	if region != "" && profile != "" {
+		cfg := aws.Config{
+			Region: aws.String(region),
+		}
+
+		opts := session.Options{
+			Profile: profile,
+			Config:  cfg,
+		}
+
+		return session.Must(session.NewSessionWithOptions(opts))
+	}
+
+	if region != "" {
+		cfg := aws.Config{
+			Region: aws.String(region),
+		}
+
+		opts := session.Options{
+			Config: cfg,
+		}
+
+		return session.Must(session.NewSessionWithOptions(opts))
+	}
+
+	if profile != "" {
+		opts := session.Options{
+			Profile: profile,
+		}
+
+		return session.Must(session.NewSessionWithOptions(opts))
+
+	}
+
+	return session.Must(session.NewSession())
 }

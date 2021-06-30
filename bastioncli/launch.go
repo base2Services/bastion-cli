@@ -34,7 +34,7 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 	id = GenerateSessionId()
 	log.Println("bastion session id: " + id)
 
-	sess = session.Must(session.NewSession())
+	sess = SetupAWSSession(c.String("region"), c.String("profile"))
 
 	ami, err = GetAndValidateAmi(sess, c.String("ami"))
 	if err != nil {
@@ -141,7 +141,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 	id = GenerateSessionId()
 	log.Println("bastion session id: " + id)
 
-	sess = session.Must(session.NewSession())
+	sess = SetupAWSSession(c.String("region"), c.String("profile"))
 
 	ami, err = GetAndValidateAmi(sess, c.String("ami"))
 	if err != nil {
@@ -238,7 +238,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 }
 
 func CmdTerminateInstance(c *cli.Context) error {
-	sess := session.Must(session.NewSession())
+	sess := SetupAWSSession(c.String("region"), c.String("profile"))
 
 	instanceId, err := GetInstanceIdBySessionId(sess, c.String("session-id"))
 	if err != nil {
