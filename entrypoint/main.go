@@ -32,14 +32,6 @@ func CliMain() {
 						Aliases: []string{"s"},
 					},
 					&cli.StringFlag{
-						Name:    "environment-name",
-						Aliases: []string{"e"},
-					},
-					&cli.StringFlag{
-						Name:    "availabilty-zone",
-						Aliases: []string{"az"},
-					},
-					&cli.StringFlag{
 						Name:    "instance-type",
 						Aliases: []string{"t"},
 						Value:   "t3.micro",
@@ -89,14 +81,6 @@ func CliMain() {
 					&cli.StringFlag{
 						Name:    "subnet-id",
 						Aliases: []string{"s"},
-					},
-					&cli.StringFlag{
-						Name:    "environment-name",
-						Aliases: []string{"e"},
-					},
-					&cli.StringFlag{
-						Name:    "availabilty-zone",
-						Aliases: []string{"az"},
 					},
 					&cli.StringFlag{
 						Name:    "instance-type",

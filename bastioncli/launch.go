@@ -64,16 +64,12 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 
 	subnetId = c.String("subnet-id")
 	if subnetId == "" {
-		availabilityZone := c.String("availabilty-zone")
-		environmentName := c.String("environment-name")
-		if environmentName == "" {
-			return errors.New("one of --subnet-id or --environment-name must be supplied")
-		}
-
-		subnetId, err = GetSubnetFromEnvironment(sess, environmentName, availabilityZone)
+		subnets, err := GetSubnets(sess)
 		if err != nil {
 			return err
 		}
+
+		subnetId = SelectSubnet(subnets)
 	}
 
 	instanceType = c.String("instance-type")
@@ -156,16 +152,12 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 
 	subnetId = c.String("subnet-id")
 	if subnetId == "" {
-		availabilityZone := c.String("availabilty-zone")
-		environmentName := c.String("environment-name")
-		if environmentName == "" {
-			return errors.New("one of --subnet-id or --environment-name must be supplied")
-		}
-
-		subnetId, err = GetSubnetFromEnvironment(sess, environmentName, availabilityZone)
+		subnets, err := GetSubnets(sess)
 		if err != nil {
 			return err
 		}
+
+		subnetId = SelectSubnet(subnets)
 	}
 
 	instanceType = c.String("instance-type")
