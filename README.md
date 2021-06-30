@@ -10,32 +10,45 @@ Creates and manages a temporary on-demand bastion EC2 instance and connects to i
 | Linux | Not yet
 | windows | Not yet
 
-### Requirements
-
-The [AWS session manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) is required to be installed
-
-## Installation
-
-Install the binary by downloading from the latest [releases](https://github.com/base2Services/bastion-cli/releases) and copy it to your $PATH
+* [About Bastion CLI](#About-Bastion-CLI)
+    * [Bastion Session Id](#Bastion-Session-Id)
+    * [Instance Management](#Instance-Management)
+    * [Spot Instances](#Spot-Instances)
+    * [Tagging](#Tagging)
+    * [IAM Permissions](#IAM-Permissions)
+* [Getting Started](#Getting-Started)
+    * [Requirements](#Requirements)
+    * [Installation](#Requirements)
+    * [Help](#Help)
+* [Launching a Bastion](#Launching-a-Bastion)
+    * [Amazon Linux](#Amazon-Linux)
+        * [Expiry](#Expiry)
+        * [SSH Sessions](#SSH-Sessions)
+        * [SSH Tunnels](#SSH-Tunnels)
+        * [Attaching a EFS Mount](#Attaching-a-EFS-Mount)
+    * [Windows](#Windows)
+        * [RDP](#RDP)
+* [Connecting to Existing Instances](#Connecting-to-Existing-Instances)
+* [Terminating an Instance](Terminating-an-Instance)
 
 
 ## About Bastion CLI
 
 You can launch a new Linux or Windows EC2 bastion instance and create a connection using Amazon Session Manager, SSH or RDP.
 
-#### Bastion Session Id
+### Bastion Session Id
 
 New bastion instances launched is assigned a session id. This session id can be used to connect back to an existing bastion instance, terminate a bastion instance or find the instance through the AWS console or cli.
 
-#### Instance Management
+### Instance Management
 
 By default bastion instances are designed to be ephemeral by having instances automatically terminate when sessions end and Linux instances will terminate after a period of time if they are still running. These behaviors can be disabled when launching a bastion instance however manual termination is then required to clean up the resources to avoid unexpected costs.
 
-#### Spot Instances
+### Spot Instances
 
 By default bastion cli will launch EC2 instance with spot pricing to save on costs, however this can be set to on-demand if a more critical bastion is required.
 
-#### Bastion EC2 Tags
+### Tagging
 
 The bastions are tagged with the following tags:
 
@@ -45,7 +58,7 @@ The bastions are tagged with the following tags:
 | bastion:session-id | [session-id]
 | bastion:launched-by | IAM user identify of the bastion launcher
 
-#### IAM Instance Profile
+### IAM Permissions
 
 AWS Session Manager requires IAM permissions to start a session on a EC2 host. Bastion cli will create a IAM policy, role and instance profile for all bastion instances in a AWS account. The resources are all created using the name `BastionCliSessionManager`.
 
@@ -68,7 +81,18 @@ The policy contains the following allowed actions:
 }
 ```
 
-#### Help
+
+## Getting Started
+
+### Requirements
+
+The [AWS session manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) is required to be installed
+
+### Installation
+
+Install the binary by downloading from the latest [releases](https://github.com/base2Services/bastion-cli/releases) and copy it to your $PATH
+
+### Help
 
 Use the help flag to see all available commands and options
 
@@ -76,6 +100,7 @@ Use the help flag to see all available commands and options
 bastion --help
 bastion [command] --help
 ```
+
 
 ## Launching a Bastion
 
@@ -166,7 +191,7 @@ bastion start-session
 
 This will discover all available EC2 instances that can be connected to. You can also use this to connect to SSH and RDP sessions.
 
-## Terminating a Instance
+## Terminating an Instance
 
 To manually terminate a bastion instance
 
