@@ -1,0 +1,11 @@
+/gopath/
+/.idea
+/dist
+/.go
+/.vscode
+/bin
+/bearse
+*.iml
+**/*.iml
+*.json
+bastion
