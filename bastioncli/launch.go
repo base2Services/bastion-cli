@@ -81,7 +81,7 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 
 	instanceType = c.String("instance-type")
 
-	userdata = BuildLinuxUserdata(sshKey, c.String("ssh-user"), expire, expireAfter, c.String("efs"))
+	userdata = BuildLinuxUserdata(sshKey, c.String("ssh-user"), expire, expireAfter, c.String("efs"), c.String("access-points"))
 
 	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata, keyName, spot)
 	if err != nil {
@@ -276,18 +276,29 @@ func ReadAndValidatePublicKey(filePath string) (string, error) {
 	return publicKey, nil
 }
 
-func BuildLinuxUserdata(sshKey string, sshUser string, expire bool, expireAfter int, efs string) string {
+func BuildLinuxUserdata(sshKey string, sshUser string, expire bool, expireAfter int, efs string, accessPoints string) string {
 	userdata := []string{"#!/bin/bash\n"}
 
 	if sshKey != "" {
 		userdata = append(userdata, fmt.Sprintf("echo \"%s\" > /home/%s/.ssh/authorized_keys\n", sshKey, sshUser))
 	}
 
-	if efs != "" {
+	if efs != "" && accessPoints == "" {
 		userdata = append(userdata, "yum install -y amazon-efs-utils\n")
 		userdata = append(userdata, "mkdir /efs\n")
 		userdata = append(userdata, fmt.Sprintf("mount -t efs %s /efs/\n", efs))
 	}
+
+	if efs!= "" && accessPoints != "" {
+		userdata = append(userdata, "yum install -y amazon-efs-utils\n")
+		ap_slice := strings.Split(accessPoints,",")
+		userdata = append(userdata, "mkdir /efs\n")
+		
+		for _, ap := range ap_slice {
+			userdata = append(userdata, fmt.Sprintf("mkdir /efs/%s\n", ap))
+			userdata = append(userdata, fmt.Sprintf("mount -t efs -o tls,accesspoint=%[1]s %[2]s /efs/%[1]s\n", ap, efs))
+		}
+	} 
 
 	if expire {
 		log.Printf("Bastion will expire after %v minutes", expireAfter)

@@ -149,7 +149,7 @@ Bastion CLI supports starting a ssh tunnels session through AWS session manager.
 Use the `--ssh-opt` flag to proved the ssh tunnel option `-L local-port:destination-address:destination-port`
 
 ```sh
-bastion launch --ssh --ssh-key ~/.ssh/id_rsa.pub --ssh-opt '-L 3306:db.internal.example.com:3306' 
+bastion launch --ssh --ssh-key ~/.ssh/id_rsa.pub --ssh-opts '-L 3306:db.internal.example.com:3306' 
 ```
 
 #### Attaching a EFS Mount
@@ -162,6 +162,16 @@ bastion launch --efs fs-123456789
 
 the volume is mounted in the `/efs` directory
 
+#### Attaching EFS Access Points
+
+Bastion CLI can also mount any number of Access Points for a EFS file system. 
+Provide the `--efs` flag to specify your file system id, and the `--access-points` flag with a comma-delimted string of access point id's for the given file system.
+
+```sh
+bastion launch --efs fs-123456789 --access-points fsap-12345678900000000,fsap-12345678900000001
+```
+
+Each access point specified will be mounted in a directory in `/efs` with its id value (eg. `/efs/fsap-12345678900000000`)
 
 ### Windows
 
