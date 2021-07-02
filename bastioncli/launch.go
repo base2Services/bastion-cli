@@ -291,9 +291,10 @@ func BuildLinuxUserdata(sshKey string, sshUser string, expire bool, expireAfter 
 
 	if efs!= "" && accessPoints != "" {
 		userdata = append(userdata, "yum install -y amazon-efs-utils\n")
-		ap_slice := strings.Split(accessPoints,",")
 		userdata = append(userdata, "mkdir /efs\n")
-		
+
+		ap_slice := strings.Split(accessPoints,",")
+
 		for _, ap := range ap_slice {
 			userdata = append(userdata, fmt.Sprintf("mkdir /efs/%s\n", ap))
 			userdata = append(userdata, fmt.Sprintf("mount -t efs -o tls,accesspoint=%[1]s %[2]s /efs/%[1]s\n", ap, efs))

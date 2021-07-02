@@ -26,6 +26,7 @@ Creates and manages a temporary on-demand bastion EC2 instance and connects to i
         * [SSH Sessions](#SSH-Sessions)
         * [SSH Tunnels](#SSH-Tunnels)
         * [Attaching a EFS Mount](#Attaching-a-EFS-Mount)
+        * [Attaching EFS Access Points](#Attaching-EFS-Access-Points)
     * [Windows](#Windows)
         * [RDP](#RDP)
 * [Connecting to Existing Instances](#Connecting-to-Existing-Instances)
