@@ -53,6 +53,10 @@ func CliMain() {
 						Name:  "efs",
 						Usage: "EFS file system id to mount to the bastion instance",
 					},
+					&cli.StringFlag{
+						Name: "access-points",
+						Usage: "Comma-delimited list of access-point ids to mount to the bastion instance",
+					},
 					&cli.IntFlag{
 						Name:    "expire-after",
 						Aliases: []string{"ex"},
@@ -61,11 +65,11 @@ func CliMain() {
 					},
 					&cli.BoolFlag{
 						Name:  "no-expire",
-						Usage: "disable expirey of the bastion instance",
+						Usage: "disable expiry of the bastion instance",
 					},
 					&cli.BoolFlag{
 						Name:  "no-terminate",
-						Usage: "disable automatic termination of the bastion instance when the session dissconnects",
+						Usage: "disable automatic termination of the bastion instance when the session disconnects",
 					},
 					&cli.BoolFlag{
 						Name:  "ssh",
@@ -74,7 +78,7 @@ func CliMain() {
 					&cli.StringFlag{
 						Name:    "ssh-key",
 						Aliases: []string{"k"},
-						Usage:   "add a public key to the authorized_users file in the bbastions user home directory",
+						Usage:   "add a public key to the authorized_users file in the bastions user home directory",
 					},
 					&cli.StringFlag{
 						Name:    "ssh-user",
@@ -85,7 +89,7 @@ func CliMain() {
 					&cli.StringFlag{
 						Name:    "ssh-opts",
 						Aliases: []string{"o"},
-						Usage:   "any aditional ssh options such as tunnels '-L 3306:db.internal.example.com:3306'",
+						Usage:   "any additional ssh options such as tunnels '-L 3306:db.internal.example.com:3306'",
 					},
 				},
 			},
@@ -144,12 +148,12 @@ func CliMain() {
 					&cli.StringFlag{
 						Name:    "instance-id",
 						Aliases: []string{"i"},
-						Usage:   "connect to a specic EC2 instance",
+						Usage:   "connect to a specific EC2 instance",
 					},
 					&cli.StringFlag{
 						Name:    "session-id",
 						Aliases: []string{"s"},
-						Usage:   "connect to a specic bastion session",
+						Usage:   "connect to a specific bastion session",
 					},
 					&cli.BoolFlag{
 						Name:  "ssh",
@@ -164,7 +168,7 @@ func CliMain() {
 					&cli.StringFlag{
 						Name:    "ssh-opts",
 						Aliases: []string{"o"},
-						Usage:   "any aditional ssh options such as tunnels '-L 3306:db.internal.example.com:3306'",
+						Usage:   "any additional ssh options such as tunnels '-L 3306:db.internal.example.com:3306'",
 					},
 					&cli.BoolFlag{
 						Name:  "rdp",

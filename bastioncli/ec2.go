@@ -93,7 +93,7 @@ func WaitForBastionToRun(sess *session.Session, instanceId string) error {
 		},
 	}
 
-	log.Println("Waiting for bastion instance " + instanceId + " to reach a runing state ...")
+	log.Println("Waiting for bastion instance " + instanceId + " to reach a running state ...")
 
 	err := client.WaitUntilInstanceRunning(input)
 	if err != nil {
