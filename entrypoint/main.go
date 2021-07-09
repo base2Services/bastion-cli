@@ -18,6 +18,7 @@ func CliMain() {
 				Name:   "launch",
 				Usage:  "launch an new bastion instance",
 				Action: bastioncli.CmdLaunchLinuxBastion,
+				Before: bastioncli.CheckRequirements,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "region",
@@ -97,6 +98,7 @@ func CliMain() {
 				Name:   "launch-windows",
 				Usage:  "launch an new windows bastion instance",
 				Action: bastioncli.CmdLaunchWindowsBastion,
+				Before: bastioncli.CheckRequirements,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "region",
@@ -134,6 +136,7 @@ func CliMain() {
 				Name:   "start-session",
 				Usage:  "start a session with an existing instance",
 				Action: bastioncli.CmdStartSession,
+				Before: bastioncli.CheckRequirements,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "region",

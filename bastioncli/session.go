@@ -2,6 +2,7 @@ package bastioncli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -299,5 +300,13 @@ func RunSubprocess(process string, args ...string) error {
 		return err
 	}
 
+	return nil
+}
+
+func CheckRequirements(c *cli.Context) error {
+	_, err := exec.LookPath(sessionManagerPlugin)
+	if err != nil {
+		return errors.New("AWS Session Manager Plugin is not installed or not available in the $PATH, check the docs for installation")
+	}
 	return nil
 }
