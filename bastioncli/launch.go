@@ -23,7 +23,9 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 		launchedBy        string
 		expire            bool
 		expireAfter       int
+		subnet            subnet
 		subnetId          string
+		securitygroupId   string
 		instanceType      string
 		keyName           string
 		userdata          string
@@ -76,14 +78,31 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 			return err
 		}
 
-		subnetId = SelectSubnet(subnets)
+		subnet = SelectSubnet(subnets)
+		subnetId = subnet.SubnetId
+	} else {
+		subnet, err = GetSubnet(sess, subnetId)
+		if err != nil {
+			return err
+		}
+	}
+
+	securitygroupId = c.String("security-group-id")
+	if securitygroupId == "" {
+		securitygroups, err := GetSecurityGroups(sess, subnet.VpcId)
+		if err != nil {
+			return err
+		}
+
+		securitygroup := SelectSecurityGroup(securitygroups)
+		securitygroupId = securitygroup.SecurityGrouId
 	}
 
 	instanceType = c.String("instance-type")
 
 	userdata = BuildLinuxUserdata(sshKey, c.String("ssh-user"), expire, expireAfter, c.String("efs"), c.String("access-points"))
 
-	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata, keyName, spot)
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot)
 	if err != nil {
 		return err
 	}
@@ -129,7 +148,9 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 		ami               string
 		instanceProfile   string
 		launchedBy        string
+		subnet            subnet
 		subnetId          string
+		securitygroupId   string
 		instanceType      string
 		keypair           string
 		keyName           string
@@ -170,7 +191,24 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 			return err
 		}
 
-		subnetId = SelectSubnet(subnets)
+		subnet = SelectSubnet(subnets)
+		subnetId = subnet.SubnetId
+	} else {
+		subnet, err = GetSubnet(sess, subnetId)
+		if err != nil {
+			return err
+		}
+	}
+
+	securitygroupId = c.String("security-group-id")
+	if securitygroupId == "" {
+		securitygroups, err := GetSecurityGroups(sess, subnet.VpcId)
+		if err != nil {
+			return err
+		}
+
+		securitygroup := SelectSecurityGroup(securitygroups)
+		securitygroupId = securitygroup.SecurityGrouId
 	}
 
 	instanceType = c.String("instance-type")
@@ -193,7 +231,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 
 	userdata = BuildWindowsUserdata()
 
-	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, instanceType, launchedBy, userdata, keyName, spot)
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot)
 	if err != nil {
 		return err
 	}

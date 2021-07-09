@@ -1,7 +1,6 @@
 package bastioncli
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
@@ -17,7 +16,7 @@ func GetTagValue(tags []*ec2.Tag, key string) string {
 			return *tag.Value
 		}
 	}
-	return fmt.Sprintf("[No %s Tag]", key)
+	return ""
 }
 
 func LookupUserIdentity(sess *session.Session) (string, error) {

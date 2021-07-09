@@ -41,6 +41,11 @@ func CliMain() {
 						Usage:   "subnet-id to launch the bastion in, a selector will pop up if none provided",
 					},
 					&cli.StringFlag{
+						Name:    "security-group-id",
+						Aliases: []string{"sg"},
+						Usage:   "security-group-id to launch the bastion with, specify `default` to use the default security group. A selector will pop up if none provided",
+					},
+					&cli.StringFlag{
 						Name:    "instance-type",
 						Aliases: []string{"t"},
 						Value:   "t3.micro",
@@ -119,6 +124,11 @@ func CliMain() {
 						Name:    "subnet-id",
 						Aliases: []string{"s"},
 						Usage:   "subnet-id to launch the bastion in, a selector will pop up if none provided",
+					},
+					&cli.StringFlag{
+						Name:    "security-group-id",
+						Aliases: []string{"sg"},
+						Usage:   "security-group-id to launch the bastion with, specify `default` to use the default security group. A selector will pop up if none provided",
 					},
 					&cli.StringFlag{
 						Name:    "instance-type",
