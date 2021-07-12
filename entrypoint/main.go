@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/base2Services/bastion-cli/bastioncli"
+	"github.com/base2Services/bastion-cli/bastion"
 	"github.com/urfave/cli/v2"
 )
 
@@ -17,8 +17,8 @@ func CliMain() {
 			{
 				Name:   "launch",
 				Usage:  "launch an new bastion instance",
-				Action: bastioncli.CmdLaunchLinuxBastion,
-				Before: bastioncli.CheckRequirements,
+				Action: bastion.CmdLaunchLinuxBastion,
+				Before: bastion.CheckRequirements,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "region",
@@ -60,7 +60,7 @@ func CliMain() {
 						Usage: "EFS file system id to mount to the bastion instance",
 					},
 					&cli.StringFlag{
-						Name: "access-points",
+						Name:  "access-points",
 						Usage: "Comma-delimited list of access-point ids to mount to the bastion instance",
 					},
 					&cli.IntFlag{
@@ -102,8 +102,8 @@ func CliMain() {
 			{
 				Name:   "launch-windows",
 				Usage:  "launch an new windows bastion instance",
-				Action: bastioncli.CmdLaunchWindowsBastion,
-				Before: bastioncli.CheckRequirements,
+				Action: bastion.CmdLaunchWindowsBastion,
+				Before: bastion.CheckRequirements,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "region",
@@ -130,6 +130,11 @@ func CliMain() {
 						Aliases: []string{"sg"},
 						Usage:   "security-group-id to launch the bastion with, specify `default` to use the default security group. A selector will pop up if none provided",
 					},
+					&cli.IntFlag{
+						Name:    "local-port",
+						Aliases: []string{"l"},
+						Usage:   "local rdp port to use to connect to the rdp session, defaults to a random port",
+					},
 					&cli.StringFlag{
 						Name:    "instance-type",
 						Aliases: []string{"t"},
@@ -145,8 +150,8 @@ func CliMain() {
 			{
 				Name:   "start-session",
 				Usage:  "start a session with an existing instance",
-				Action: bastioncli.CmdStartSession,
-				Before: bastioncli.CheckRequirements,
+				Action: bastion.CmdStartSession,
+				Before: bastion.CheckRequirements,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "region",
@@ -196,7 +201,7 @@ func CliMain() {
 			{
 				Name:   "terminate",
 				Usage:  "terminate a bastion instance",
-				Action: bastioncli.CmdTerminateInstance,
+				Action: bastion.CmdTerminateInstance,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "region",

@@ -1,4 +1,4 @@
-package bastioncli
+package bastion
 
 import (
 	"errors"
@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/base2Services/bastion-cli/bastion/rdp"
 	uuid "github.com/satori/go.uuid"
 	"github.com/urfave/cli/v2"
 )
@@ -254,7 +255,10 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 
 		CopyPasswordToClipBoard(password)
 
-		localRdpPort := GetRandomRDPPort()
+		localRdpPort := c.Int("local-port")
+		if localRdpPort == 0 {
+			localRdpPort = rdp.GetRandomRDPPort()
+		}
 
 		err = StartRDPSession(sess, bastionInstanceId, localRdpPort, c.String("profile"))
 		if err != nil {
@@ -327,17 +331,17 @@ func BuildLinuxUserdata(sshKey string, sshUser string, expire bool, expireAfter 
 		userdata = append(userdata, fmt.Sprintf("mount -t efs %s /efs/\n", efs))
 	}
 
-	if efs!= "" && accessPoints != "" {
+	if efs != "" && accessPoints != "" {
 		userdata = append(userdata, "yum install -y amazon-efs-utils\n")
 		userdata = append(userdata, "mkdir /efs\n")
 
-		ap_slice := strings.Split(accessPoints,",")
+		ap_slice := strings.Split(accessPoints, ",")
 
 		for _, ap := range ap_slice {
 			userdata = append(userdata, fmt.Sprintf("mkdir /efs/%s\n", ap))
 			userdata = append(userdata, fmt.Sprintf("mount -t efs -o tls,accesspoint=%[1]s %[2]s /efs/%[1]s\n", ap, efs))
 		}
-	} 
+	}
 
 	if expire {
 		log.Printf("Bastion will expire after %v minutes", expireAfter)

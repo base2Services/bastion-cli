@@ -1,19 +1,19 @@
-package bastioncli
+package rdp
 
 import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"os"
-	"os/exec"
 	"time"
 
 	"github.com/avast/retry-go/v3"
 )
 
 func GetRandomRDPPort() int {
-	return 57564 //rand.Intn(59999-50000) + 50000
+	return rand.Intn(59999-50000) + 50000
 }
 
 func CreateRDPFile(port int, id string) (string, error) {
@@ -43,22 +43,6 @@ prompt for credentials on client=i:1`,
 
 func CreateRDPURL(port int) string {
 	return fmt.Sprintf("rdp:///auto%%20connect:i:1&full%%20address=s:localhost:%d&audiomode=i:2&disable%%20themes=i:1&username=s:Administrator&prompt%%20for%%20credentials%%20on%%20client=i:1", port)
-}
-
-func OpenRemoteDesktopClient(rdpPort int) {
-	err := WaitForRDPPort(rdpPort)
-	if err != nil {
-		log.Printf("Failed to wait for rdp port %d, %s", rdpPort, err)
-		return
-	}
-
-	rdpUrl := CreateRDPURL(rdpPort)
-
-	cmd := exec.Command("open", rdpUrl)
-	err = cmd.Run()
-	if err != nil {
-		log.Printf("Failed to run the remote desktop client, %s", err)
-	}
 }
 
 func WaitForRDPPort(port int) error {

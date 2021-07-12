@@ -1,4 +1,4 @@
-package bastioncli
+package bastion
 
 import (
 	"encoding/json"
@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ssm"
+	"github.com/base2Services/bastion-cli/bastion/rdp"
 	"github.com/urfave/cli/v2"
 )
 
@@ -52,7 +53,10 @@ func CmdStartSession(c *cli.Context) error {
 			return err
 		}
 	} else if c.Bool("rdp") {
-		localRdpPort := GetRandomRDPPort()
+		localRdpPort := c.Int("local-port")
+		if localRdpPort == 0 {
+			localRdpPort = rdp.GetRandomRDPPort()
+		}
 
 		if c.String("session-id") != "" {
 			parameterName = GetDefaultKeyPairParameterName(c.String("session-id"))
@@ -216,7 +220,7 @@ func StartRDPSession(sess *session.Session, instanceId string, localRdpPort int,
 
 	// open in a goroutine to wait for the session manager session
 	//to start before starting the remote desktop client
-	go OpenRemoteDesktopClient(localRdpPort)
+	go rdp.OpenRemoteDesktopClient(localRdpPort)
 
 	err = RunSubprocess(sessionManagerPlugin, string(JSONSession), *sess.Config.Region, "StartSession", awsProfile, string(JSONParameters), endpoint)
 	if err != nil {
