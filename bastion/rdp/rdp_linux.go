@@ -5,5 +5,5 @@ import (
 )
 
 func OpenRemoteDesktopClient(rdpPort int) {
-	log.Println("not supported")
+	log.Printf("open your prefered rdp client and connect to the server on localhost:%v as the Administrator user", rdpPort)
 }
