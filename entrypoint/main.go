@@ -145,6 +145,10 @@ func CliMain() {
 						Name:  "rdp",
 						Usage: "start a rdp session and launch your remote desktop client",
 					},
+					&cli.BoolFlag{
+						Name:  "no-terminate",
+						Usage: "disable automatic termination of the bastion instance when the session disconnects",
+					},
 				},
 			},
 			{

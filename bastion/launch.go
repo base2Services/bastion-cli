@@ -276,6 +276,13 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 		}
 	}
 
+	if !c.Bool("no-terminate") {
+		err = TerminateEC2(sess, bastionInstanceId)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
