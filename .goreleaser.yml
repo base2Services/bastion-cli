@@ -1,0 +1,11 @@
+builds:
+  - binary: bastion
+    main: main.go
+    goos:
+      - windows
+      - darwin
+      - linux
+archives:
+  - format_overrides:
+    - goos: windows
+      format: zip
