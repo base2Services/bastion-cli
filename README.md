@@ -7,8 +7,8 @@ Creates and manages a temporary on-demand bastion EC2 instance and connects to i
 | Operating System | Supported
 | --- | ---
 | Mac | Yes
-| Linux | Not yet
-| windows | Not yet
+| windows | Yes
+| Linux | Yes
 
 * [About Bastion CLI](#About-Bastion-CLI)
     * [Bastion Session Id](#Bastion-Session-Id)
@@ -87,7 +87,11 @@ The policy contains the following allowed actions:
 
 ### Requirements
 
-The [AWS session manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) is required to be installed
+* The [AWS session manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) is required to be installed
+* RDP client installed
+    * MacOS - [Microsoft Remote Desktop](https://docs.microsoft.com/en-us/windows-server/remote/remote-desktop-services/clients/remote-desktop-mac)
+    * Windows - [mstsc](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/mstsc)
+    * Linux - Not support yet for opening a rdp client
 
 ### Installation
 
@@ -189,7 +193,10 @@ Bastion CLI supports creating RDP sessions and opening up your remote desktop cl
 ```sh
 bastion launch-windows --rdp
 ```
+
 Once the tunnel is open the Bastion CLI will start your remote desktop client and provide the Windows Administrator password in your clipboard for you to paste in to the login form.
+
+**Linux Users:** Opening up the RDP client is no yet supported on linux, the port will be printed to the console in which you can then manually launch your RDP client and connect to localhost:PORT as the Administrator user.
 
 
 ## Connecting to Existing Instances
