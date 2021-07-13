@@ -13,7 +13,7 @@ func OpenRemoteDesktopClient(rdpPort int) {
 		return
 	}
 
-	cmd := exec.Command("mstsc", fmt.Sprintf("/v:localhost:%v", rdpPort))
+	cmd := exec.Command("mstsc", fmt.Sprintf("/v:localhost:%v", rdpPort), "/admin")
 	err = cmd.Run()
 	if err != nil {
 		log.Printf("Failed to run the remote desktop client, %s", err)
