@@ -1,4 +1,4 @@
-package bastioncli
+package bastion
 
 import (
 	"errors"

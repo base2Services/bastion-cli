@@ -5,7 +5,7 @@ help:
 	echo "make snapshot - create release binaries"
 
 build:
-	go build -o bastion
+	go build -o bin/bastion
 
 install:
 	go build -o bastion && cp ./bastion /usr/local/bin/bastion
