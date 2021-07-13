@@ -9,7 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/base2Services/bastion-cli/bastion/rdp"
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 	"github.com/urfave/cli/v2"
 )
 
@@ -307,7 +307,7 @@ func CmdTerminateInstance(c *cli.Context) error {
 }
 
 func GenerateSessionId() string {
-	return uuid.NewV4().String()
+	return uuid.New().String()
 }
 
 func ReadAndValidatePublicKey(filePath string) (string, error) {
