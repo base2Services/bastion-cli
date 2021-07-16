@@ -5,6 +5,9 @@ builds:
       - windows
       - darwin
       - linux
+    ldflags:
+      - -X github.com/base2Services/bastion-cli/entrypoint.Version={{.Env.VERSION}}
+      - -X github.com/base2Services/bastion-cli/entrypoint.Build={{.Env.COMMIT}}
 archives:
   - format_overrides:
     - goos: windows

@@ -1,6 +1,7 @@
 package entrypoint
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -8,11 +9,14 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var Version = "latest"
+var Build = "build"
+
 func CliMain() {
 	app := &cli.App{
 		Name:    "bastion",
 		Usage:   "manage on-demand EC2 bastions",
-		Version: "0.1.3",
+		Version: fmt.Sprintf("%s_%s", Version, Build),
 		Commands: []*cli.Command{
 			{
 				Name:   "launch",
