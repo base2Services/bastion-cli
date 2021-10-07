@@ -27,7 +27,7 @@ func GetAndValidateAmi(sess *session.Session, input string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if !ValidAmi(input) {
+		if !ValidAmi(ami) {
 			return "", errors.New("parameter value is not a valid ami")
 		}
 		return ami, nil
