@@ -3,7 +3,6 @@ package bastion
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -149,7 +148,6 @@ func GetSessionIdFromInstance(sess *session.Session, instanceId string) (string,
 	}
 
 	for i := range result.Tags {
-		log.Printf("tag : %s : %s", *result.Tags[i].Key, *result.Tags[i].Value)
 		if *result.Tags[i].Key == "bastion:session-id" {
 			return *result.Tags[i].Value, nil
 		}
