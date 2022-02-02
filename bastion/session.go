@@ -62,9 +62,22 @@ func CmdStartSession(c *cli.Context) error {
 			parameterName = GetDefaultKeyPairParameterName(c.String("session-id"))
 		} else if c.String("keypair-parameter") != "" {
 			parameterName = c.String("keypair-parameter")
+		} else {
+			// Get session id from instance tags
+			sessionId, err := GetSessionIdFromInstance(sess, instanceId)
+
+			if err != nil {
+				return err
+			}
+
+			if sessionId != "" {
+				parameterName = GetDefaultKeyPairParameterName(sessionId)
+			}
 		}
 
-		if parameterName != "" {
+		if parameterName == "" {
+			log.Println("unable to retrive the windows password")
+		} else {
 			keypair, err := GetKeyPairParameter(sess, parameterName)
 			if err != nil {
 				return err

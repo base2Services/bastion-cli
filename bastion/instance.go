@@ -124,3 +124,34 @@ func EnrichInstancesDetail(sess *session.Session, instances []*string) ([]string
 
 	return instanceDetail, nil
 }
+
+func GetSessionIdFromInstance(sess *session.Session, instanceId string) (string, error) {
+	client := ec2.New(sess)
+
+	filters := []*ec2.Filter{
+		{
+			Name: aws.String("resource-id"),
+			Values: []*string{
+				aws.String(instanceId),
+			},
+		},
+	}
+
+	input := ec2.DescribeTagsInput{
+		Filters: filters,
+	}
+
+	result, err := client.DescribeTags(&input)
+
+	if err != nil {
+		return "", err
+	}
+
+	for i := range result.Tags {
+		if *result.Tags[i].Key == "bastion:session-id" {
+			return *result.Tags[i].Value, nil
+		}
+	}
+
+	return "", nil
+}
