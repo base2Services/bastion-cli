@@ -2,6 +2,7 @@ package bastion
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -34,14 +35,6 @@ func GetAndValidateAmi(sess *session.Session, input string, instance_type string
 		return ami, nil
 	}
 
-	if parameter, ok := amis[input]; ok {
-		ami, err := GetAmiFromParameter(sess, parameter)
-		if err != nil {
-			return "", err
-		}
-		return ami, nil
-	}
-
 	//if instance type is not default
 	if instance_type != "t3.micro" {
 		supported_architectures, err := GetArchitectures(sess, instance_type)
@@ -60,18 +53,55 @@ func GetAndValidateAmi(sess *session.Session, input string, instance_type string
 		return ami, nil
 	}
 
+	if parameter, ok := amis[input]; ok {
+		ami, err := GetAmiFromParameter(sess, parameter)
+		if err != nil {
+			return "", err
+		}
+		return ami, nil
+	}
+
 	return "", errors.New("unable to find ami")
+}
+
+func selectService() string {
+	//Can add more services here that are offered in public parameter store if needed? eg: Marketplace, debian etc
+	options := []string{
+		"/aws/service/ami-amazon-linux-latest/",
+		"/aws/service/ami-windows-latest/",
+	}
+
+	selected := ""
+	prompt := &survey.Select{
+		Message:  "Select a SSM service:",
+		Options:  options,
+		PageSize: 25,
+	}
+	survey.AskOne(prompt, &selected)
+
+	return selected
 }
 
 func GetParamForArchitecture(sess *session.Session, architecture string) (string, error) {
 	var parameters []*string
 	client := ssm.New(sess)
 
-	input := &ssm.GetParametersByPathInput{
-		Path: aws.String("/aws/service/ami-amazon-linux-latest"),
+	service := selectService()
+
+	input := &ssm.DescribeParametersInput{
+		ParameterFilters: []*ssm.ParameterStringFilter{
+			{
+				Key:    aws.String("Name"),
+				Option: aws.String("BeginsWith"),
+				Values: []*string{aws.String(service)},
+			},
+		},
+		MaxResults: aws.Int64(50),
 	}
 
-	params, err := client.GetParametersByPath(input)
+	//Need to add some NextToken loop here to get ALL results...
+
+	params, err := client.DescribeParameters(input)
 	if err != nil {
 		return "", err
 	}
@@ -80,6 +110,11 @@ func GetParamForArchitecture(sess *session.Session, architecture string) (string
 		if strings.Contains(*v.Name, architecture) {
 			parameters = append(parameters, v.Name)
 		}
+	}
+
+	if len(parameters) == 0 {
+		msg := fmt.Sprintf("no AMI's found for architecture %s from service %s", architecture, service)
+		return "", errors.New(msg)
 	}
 
 	output := selectParameter(parameters)
