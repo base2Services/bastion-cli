@@ -44,6 +44,8 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 		return err
 	}
 
+	instanceType = c.String("instance-type")
+
 	instanceProfile, err = GetIAMInstanceProfile(sess)
 	if err != nil {
 		return err
@@ -160,7 +162,6 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 
 	id = GenerateSessionId()
 	log.Println("bastion session id: " + id)
-	log.Println(c.String("instance-type"))
 
 	sess = SetupAWSSession(c.String("region"), c.String("profile"))
 
@@ -168,7 +169,6 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Println(c.String("instance-type"))
 
 	instanceProfile, err = GetIAMInstanceProfile(sess)
 	if err != nil {
