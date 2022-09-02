@@ -39,7 +39,7 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 
 	sess = SetupAWSSession(c.String("region"), c.String("profile"))
 
-	ami, err = GetAndValidateAmi(sess, c.String("ami"))
+	ami, err = GetAndValidateAmi(sess, c.String("ami"), c.String("instance-type"))
 	if err != nil {
 		return err
 	}
@@ -98,8 +98,6 @@ func CmdLaunchLinuxBastion(c *cli.Context) error {
 		securitygroup := SelectSecurityGroup(securitygroups)
 		securitygroupId = securitygroup.SecurityGrouId
 	}
-
-	instanceType = c.String("instance-type")
 
 	userdata = BuildLinuxUserdata(sshKey, c.String("ssh-user"), expire, expireAfter, c.String("efs"), c.String("access-points"))
 
@@ -162,13 +160,15 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 
 	id = GenerateSessionId()
 	log.Println("bastion session id: " + id)
+	log.Println(c.String("instance-type"))
 
 	sess = SetupAWSSession(c.String("region"), c.String("profile"))
 
-	ami, err = GetAndValidateAmi(sess, c.String("ami"))
+	ami, err = GetAndValidateAmi(sess, c.String("ami"), c.String("instance-type"))
 	if err != nil {
 		return err
 	}
+	log.Println(c.String("instance-type"))
 
 	instanceProfile, err = GetIAMInstanceProfile(sess)
 	if err != nil {
