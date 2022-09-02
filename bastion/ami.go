@@ -35,7 +35,7 @@ func GetAndValidateAmi(sess *session.Session, input string, instance_type string
 		return ami, nil
 	}
 
-	//if instance type is not default
+	//if instance type is not default //TODO Make this dynamic based on non-default somehow (also differentiate between linux & windows?)
 	if instance_type != "t3.micro" {
 		supported_architectures, err := GetArchitectures(sess, instance_type)
 		if err != nil {
@@ -64,7 +64,9 @@ func GetAndValidateAmi(sess *session.Session, input string, instance_type string
 	return "", errors.New("unable to find ami")
 }
 
+// User selects service to retrieve AMI's from
 func selectService() string {
+
 	//Can add more services here that are offered in public parameter store if needed? eg: Marketplace, debian etc
 	options := []string{
 		"/aws/service/ami-amazon-linux-latest/",
@@ -82,6 +84,7 @@ func selectService() string {
 	return selected
 }
 
+// Query service for AMI's that satisfy specified architecture
 func GetParamForArchitecture(sess *session.Session, architecture string) (string, error) {
 	var parameters []*string
 	client := ssm.New(sess)
@@ -99,18 +102,17 @@ func GetParamForArchitecture(sess *session.Session, architecture string) (string
 		MaxResults: aws.Int64(50),
 	}
 
-	//Need to add some NextToken loop here to get ALL results...
-
-	params, err := client.DescribeParameters(input)
-	if err != nil {
-		return "", err
-	}
-
-	for _, v := range params.Parameters {
-		if strings.Contains(*v.Name, architecture) {
-			parameters = append(parameters, v.Name)
-		}
-	}
+	pageNum := 0
+	err := client.DescribeParametersPages(input,
+		func(page *ssm.DescribeParametersOutput, lastPage bool) bool {
+			for _, v := range page.Parameters {
+				if strings.Contains(*v.Name, architecture) {
+					parameters = append(parameters, v.Name)
+				}
+			}
+			pageNum++
+			return pageNum <= 10
+		})
 
 	if len(parameters) == 0 {
 		msg := fmt.Sprintf("no AMI's found for architecture %s from service %s", architecture, service)
@@ -122,6 +124,7 @@ func GetParamForArchitecture(sess *session.Session, architecture string) (string
 	return output, err
 }
 
+// Get all supported architectures for current instance type
 func GetArchitectures(sess *session.Session, instance_type string) ([]*string, error) {
 	client := ec2.New(sess)
 
@@ -144,6 +147,7 @@ func GetArchitectures(sess *session.Session, instance_type string) ([]*string, e
 
 }
 
+// Select parameter from displayed parameters
 func selectParameter(parameters []*string) string {
 	var options []string
 
@@ -162,6 +166,7 @@ func selectParameter(parameters []*string) string {
 
 }
 
+// Select architecture from displayed architectures
 func SelectArchitecture(architectures []*string) string {
 	var options []string
 
