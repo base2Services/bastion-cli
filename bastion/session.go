@@ -12,9 +12,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/avast/retry-go/v3"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/base2Services/bastion-cli/bastion/rdp"
 	"github.com/urfave/cli/v2"
@@ -132,6 +135,182 @@ func StartSession(sess *session.Session, instanceId string, awsProfile string) e
 	}
 
 	err = RunSubprocess(sessionManagerPlugin, string(JSONSession), *sess.Config.Region, "StartSession", awsProfile, string(JSONParameters), endpoint)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = TerminateSession(sess, *session.SessionId)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return nil
+}
+
+func SelectRDSInstance(sess *session.Session) (string, error) {
+	///Function to select an RDS Instance to connect to when remoteHost flag is not set
+
+	client := rds.New(sess)
+	var options []string
+
+	input := &rds.DescribeDBInstancesInput{}
+
+	instances, err := client.DescribeDBInstances(input)
+	if err != nil {
+		return "", err
+	}
+
+	for _, elem := range instances.DBInstances {
+		options = append(options, *elem.DBInstanceIdentifier)
+	}
+
+	selected := ""
+	prompt := &survey.Select{
+		Message:  "Select the RDS Instance to connect:",
+		Options:  options,
+		PageSize: 25,
+	}
+	survey.AskOne(prompt, &selected)
+
+	selected_instance_input := &rds.DescribeDBInstancesInput{
+		DBInstanceIdentifier: &selected,
+	}
+	selected_instance, err := client.DescribeDBInstances(selected_instance_input)
+	if err != nil {
+		return "", err
+	}
+
+	//Ensure only 1 RDS instance is selected
+	if len(selected_instance.DBInstances) == 1 {
+		remoteHost := *selected_instance.DBInstances[len(selected_instance.DBInstances)-1].Endpoint.Address
+		return remoteHost, err
+	} else {
+		return "Invalid RDS", err
+	}
+
+}
+
+func CreateDefaultBastion(sess *session.Session) (string, error) {
+	///Function to create a bastion instance with 'default' parameters
+
+	//Check if theres a better way to create a default instance? eg: call CmdLaunchLinuxBastion with some spoofed cli context? but somehow return instance id
+
+	//Parameters
+	var subnet subnet
+	var err error
+	log.Println("Create a Bastion Instance")
+
+	//Create default bastion
+	id := GenerateSessionId()
+
+	//Ami
+	ami, err := GetAndValidateAmi(sess, "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2")
+	if err != nil {
+		return "", err
+	}
+
+	//Instance Profile
+	instanceProfile, err := GetIAMInstanceProfile(sess)
+	if err != nil {
+		return "", err
+	}
+
+	//Select subnet
+	subnets, err := GetSubnets(sess)
+	if err != nil {
+		return "", err
+	}
+	subnet = SelectSubnet(subnets)
+	subnetId := subnet.SubnetId
+
+	//Select security group
+	securitygroups, err := GetSecurityGroups(sess, subnet.VpcId)
+	if err != nil {
+		return "", err
+	}
+	securitygroup := SelectSecurityGroup(securitygroups)
+	securitygroupId := securitygroup.SecurityGrouId
+
+	instanceType := "t3.micro"
+
+	launchedBy, err := LookupUserIdentity(sess)
+	if err != nil {
+		return "", err
+	}
+
+	userdata := BuildLinuxUserdata("", "ec2-user", true, 120, "", "")
+
+	bastionInstanceId, err := StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, "", true)
+	if err != nil {
+		return "", err
+	}
+
+	return bastionInstanceId, err
+}
+
+func StartRemotePortForwardSession(c *cli.Context) error {
+	//Parameters
+	docName := "AWS-StartPortForwardingSessionToRemoteHost"
+	localPort := c.String("local-port")
+	remotePort := c.String("remote-port")
+	remoteHost := c.String("remote-host")
+	var instanceId string
+	var err error
+
+	if localPort == "" {
+		localPort = remotePort
+	}
+
+	//Create session
+	sess := SetupAWSSession(c.String("region"), c.String("profile"))
+
+	if remoteHost == "" {
+		//Retrieve RDS Instances
+		remoteHost, err = SelectRDSInstance(sess)
+		if err != nil {
+			return err
+		}
+	}
+
+	//Launch default bastion
+	instanceId, err = CreateDefaultBastion(sess)
+	if err != nil {
+		return err
+	}
+
+	parameters := &ssm.StartSessionInput{
+		DocumentName: &docName,
+		Parameters: map[string][]*string{
+			"portNumber":      {aws.String(remotePort)},
+			"localPortNumber": {aws.String(localPort)},
+			"host":            {aws.String(remoteHost)},
+		},
+		Target: &instanceId,
+	}
+
+	session, endpoint, err := GetStartSessionPayload(sess, parameters)
+	if err != nil {
+		return err
+	}
+
+	JSONSession, err := json.Marshal(&session)
+	if err != nil {
+		log.Println("Error marshaling start session response, ", err)
+		return err
+	}
+
+	JSONParameters, err := json.Marshal(parameters)
+	if err != nil {
+		log.Println("Error marshaling start session parameters, ", err)
+		return err
+	}
+
+	err = RunSubprocess(sessionManagerPlugin, string(JSONSession), *sess.Config.Region, "StartSession", c.String("profile"), string(JSONParameters), endpoint)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = TerminateEC2(sess, instanceId)
 	if err != nil {
 		log.Println(err)
 	}
