@@ -46,7 +46,6 @@ func GetAndValidateAmi(sess *session.Session, input string, instance_type string
 		}
 		return ami, nil
 	}
-	print("THISFHOSD")
 	return "", errors.New("unable to find ami")
 }
 
