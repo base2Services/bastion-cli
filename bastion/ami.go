@@ -11,11 +11,12 @@ import (
 )
 
 var amis = map[string]string{
-	"amazon-linux": "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2",
-	"windows":      "/aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base",
+	"amazon-linux":       "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2",
+	"amazon-linux-arm64": "/aws/service/ami-amazon-linux-latest/amzn2-ami-kernel-5.10-hvm-arm64-gp2",
+	"windows":            "/aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base",
 }
 
-func GetAndValidateAmi(sess *session.Session, input string) (string, error) {
+func GetAndValidateAmi(sess *session.Session, input string, instance_type string) (string, error) {
 	// return straight away if it's a valid ami
 	if ValidAmi(input) {
 		return input, nil
@@ -33,6 +34,11 @@ func GetAndValidateAmi(sess *session.Session, input string) (string, error) {
 		return ami, nil
 	}
 
+	input, err := GetArchitecture(sess, instance_type)
+	if err != nil {
+		return "", err
+	}
+
 	if parameter, ok := amis[input]; ok {
 		ami, err := GetAmiFromParameter(sess, parameter)
 		if err != nil {
@@ -40,8 +46,37 @@ func GetAndValidateAmi(sess *session.Session, input string) (string, error) {
 		}
 		return ami, nil
 	}
-
 	return "", errors.New("unable to find ami")
+}
+
+// Get all supported architectures for current instance type
+func GetArchitecture(sess *session.Session, instance_type string) (string, error) {
+	client := ec2.New(sess)
+
+	input := &ec2.DescribeInstanceTypesInput{
+		InstanceTypes: []*string{
+			aws.String(instance_type),
+		},
+	}
+
+	instance_types, err := client.DescribeInstanceTypes(input)
+	if err != nil {
+		return "", err
+	}
+
+	selected_type := instance_types.InstanceTypes[0]
+	processor_info := selected_type.ProcessorInfo
+	supported_architectures := processor_info.SupportedArchitectures
+
+	for _, arch := range supported_architectures {
+		if *arch == "arm64" {
+			return "amazon-linux-arm64", nil
+		}
+		if *arch == "x86_64" {
+			return "amazon-linux", nil
+		}
+	}
+	return "No architectures found", err
 }
 
 func GetAmiFromParameter(sess *session.Session, parameter string) (string, error) {
