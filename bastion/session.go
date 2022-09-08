@@ -204,7 +204,7 @@ func CreateDefaultBastion(sess *session.Session) (string, error) {
 	id := GenerateSessionId()
 
 	//Ami
-	ami, err := GetAndValidateAmi(sess, "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2")
+	ami, err := GetAndValidateAmi(sess, "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2", "t3.micro")
 	if err != nil {
 		return "", err
 	}
