@@ -207,6 +207,36 @@ func CliMain() {
 				},
 			},
 			{
+				Name:   "port-forward",
+				Usage:  "setup a remote port forward",
+				Action: bastion.StartRemotePortForwardSession,
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "region",
+						Aliases: []string{"r"},
+						Usage:   "AWS region",
+					},
+					&cli.StringFlag{
+						Name:     "remote-port",
+						Usage:    "remote port",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:  "local-port",
+						Usage: "local port",
+					},
+					&cli.StringFlag{
+						Name:  "remote-host",
+						Usage: "remote host",
+					},
+					&cli.StringFlag{
+						Name:    "instance-id",
+						Aliases: []string{"i"},
+						Usage:   "connect to a specific EC2 instance",
+					},
+				},
+			},
+			{
 				Name:   "terminate",
 				Usage:  "terminate a bastion instance",
 				Action: bastion.CmdTerminateInstance,
