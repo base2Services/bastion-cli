@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/base2Services/bastion-cli/bastion/rdp"
@@ -24,6 +25,7 @@ import (
 )
 
 var sessionManagerPlugin = "session-manager-plugin"
+var description = "Bastion Port Forward Access"
 
 func CmdStartSession(c *cli.Context) error {
 	var (
@@ -147,7 +149,7 @@ func StartSession(sess *session.Session, instanceId string, awsProfile string) e
 	return nil
 }
 
-func SelectRDSInstance(sess *session.Session) (string, error) {
+func SelectRDSInstance(sess *session.Session) (string, string, error) {
 	///Function to select an RDS Instance to connect to when remoteHost flag is not set
 
 	client := rds.New(sess)
@@ -157,7 +159,7 @@ func SelectRDSInstance(sess *session.Session) (string, error) {
 
 	instances, err := client.DescribeDBInstances(input)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	for _, elem := range instances.DBInstances {
@@ -177,20 +179,21 @@ func SelectRDSInstance(sess *session.Session) (string, error) {
 	}
 	selected_instance, err := client.DescribeDBInstances(selected_instance_input)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	//Ensure only 1 RDS instance is selected
 	if len(selected_instance.DBInstances) == 1 {
 		remoteHost := *selected_instance.DBInstances[len(selected_instance.DBInstances)-1].Endpoint.Address
-		return remoteHost, err
+		instance := *selected_instance.DBInstances[len(selected_instance.DBInstances)-1].DBInstanceIdentifier
+		return remoteHost, instance, err
 	} else {
-		return "Invalid RDS", err
+		return "Too many RDS instances returned", "", err
 	}
 
 }
 
-func CreateDefaultBastion(sess *session.Session) (string, error) {
+func CreateDefaultBastion(sess *session.Session) (string, string, error) {
 	///Function to create a bastion instance with 'default' parameters
 
 	//Check if theres a better way to create a default instance? eg: call CmdLaunchLinuxBastion with some spoofed cli context? but somehow return instance id
@@ -206,19 +209,19 @@ func CreateDefaultBastion(sess *session.Session) (string, error) {
 	//Ami
 	ami, err := GetAndValidateAmi(sess, "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2", "t3.micro")
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	//Instance Profile
 	instanceProfile, err := GetIAMInstanceProfile(sess)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	//Select subnet
 	subnets, err := GetSubnets(sess)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	subnet = SelectSubnet(subnets)
 	subnetId := subnet.SubnetId
@@ -226,7 +229,7 @@ func CreateDefaultBastion(sess *session.Session) (string, error) {
 	//Select security group
 	securitygroups, err := GetSecurityGroups(sess, subnet.VpcId)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	securitygroup := SelectSecurityGroup(securitygroups)
 	securitygroupId := securitygroup.SecurityGrouId
@@ -235,27 +238,121 @@ func CreateDefaultBastion(sess *session.Session) (string, error) {
 
 	launchedBy, err := LookupUserIdentity(sess)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	userdata := BuildLinuxUserdata("", "ec2-user", true, 120, "", "")
 
 	bastionInstanceId, err := StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, "", true)
 	if err != nil {
+		return "", "", err
+	}
+
+	return bastionInstanceId, securitygroupId, err
+}
+
+func GetRdsSecurityGroupId(sess *session.Session, rds_instance string) (string, error) {
+	//Function to get the security group id for the given RDS Instance
+	rds_client := rds.New(sess)
+
+	selected_instance_input := &rds.DescribeDBInstancesInput{
+		DBInstanceIdentifier: &rds_instance,
+	}
+
+	instance, err := rds_client.DescribeDBInstances(selected_instance_input)
+
+	if err != nil {
+		println(err.Error())
 		return "", err
 	}
 
-	return bastionInstanceId, err
+	if len(instance.DBInstances) == 0 {
+		return "", errors.New("no RDS Instances found")
+	}
+
+	security_group_id := *instance.DBInstances[len(instance.DBInstances)-1].VpcSecurityGroups[0].VpcSecurityGroupId
+
+	return security_group_id, err
+}
+
+func AuthorizeSecurityGroup(sess *session.Session, security_group_id string, bastion_security_group_id string) error {
+	//Function to authorize traffic from the bastion instance security group to the RDS instance security group
+
+	ec2_client := ec2.New(sess)
+
+	security_ingress_input := &ec2.AuthorizeSecurityGroupIngressInput{
+		GroupId: &security_group_id,
+
+		IpPermissions: []*ec2.IpPermission{
+			{
+				FromPort:   aws.Int64(-1),
+				ToPort:     aws.Int64(-1),
+				IpProtocol: aws.String("-1"),
+				UserIdGroupPairs: []*ec2.UserIdGroupPair{
+					{
+						Description: aws.String(description),
+						GroupId:     &bastion_security_group_id,
+					},
+				},
+			},
+		},
+	}
+
+	_, err := ec2_client.AuthorizeSecurityGroupIngress(security_ingress_input)
+	if err != nil {
+		println(err.Error())
+		return err
+	}
+
+	return nil
+
+}
+
+func RevertSecurityGroup(sess *session.Session, security_group_id string, bastion_security_group_id string) error {
+	//Function to revert security group changes made in original authorization
+
+	ec2_client := ec2.New(sess)
+
+	security_ingress_input := &ec2.RevokeSecurityGroupIngressInput{
+		GroupId: &security_group_id,
+		IpPermissions: []*ec2.IpPermission{
+			{
+				FromPort:   aws.Int64(-1),
+				ToPort:     aws.Int64(-1),
+				IpProtocol: aws.String("-1"),
+				UserIdGroupPairs: []*ec2.UserIdGroupPair{
+					{
+						Description: aws.String(description),
+						GroupId:     &bastion_security_group_id,
+					},
+				},
+			},
+		},
+	}
+
+	_, err := ec2_client.RevokeSecurityGroupIngress(security_ingress_input)
+
+	if err != nil {
+		println(err.Error())
+		return err
+	}
+
+	println("Reverting security group")
+	return nil
+
 }
 
 func StartRemotePortForwardSession(c *cli.Context) error {
+	//Create a default bastion instance then starts a remote port forward session to the selected RDS instance
+
 	//Parameters
 	docName := "AWS-StartPortForwardingSessionToRemoteHost"
 	localPort := c.String("local-port")
 	remotePort := c.String("remote-port")
-	remoteHost := c.String("remote-host")
 	var instanceId string
 	var err error
+	var instanceName string
+	var security_group_id string
 
 	if localPort == "" {
 		localPort = remotePort
@@ -264,20 +361,29 @@ func StartRemotePortForwardSession(c *cli.Context) error {
 	//Create session
 	sess := SetupAWSSession(c.String("region"), c.String("profile"))
 
-	if remoteHost == "" {
-		//Retrieve RDS Instances
-		remoteHost, err = SelectRDSInstance(sess)
-		if err != nil {
-			return err
-		}
-	}
-
 	//Launch default bastion
-	instanceId, err = CreateDefaultBastion(sess)
+	instanceId, bastion_security_group_id, err := CreateDefaultBastion(sess)
 	if err != nil {
 		return err
 	}
 
+	//Retrieve RDS Instances
+	remoteHost, instanceName, err := SelectRDSInstance(sess)
+	if err != nil {
+		return err
+	}
+
+	//Get RDS instance security group id
+	security_group_id, err = GetRdsSecurityGroupId(sess, instanceName)
+	if err != nil {
+		println(err)
+		return err
+	}
+
+	//Edit security group policy of instance to allow inbound traffic
+	AuthorizeSecurityGroup(sess, security_group_id, bastion_security_group_id)
+
+	//Run SSM Session with port forward
 	parameters := &ssm.StartSessionInput{
 		DocumentName: &docName,
 		Parameters: map[string][]*string{
@@ -310,11 +416,19 @@ func StartRemotePortForwardSession(c *cli.Context) error {
 		log.Println(err)
 	}
 
+	//Revert security group changes to RDS instance security group
+	err = RevertSecurityGroup(sess, security_group_id, bastion_security_group_id)
+	if err != nil {
+		log.Println(err)
+	}
+
+	//Terminate Bastion Instance
 	err = TerminateEC2(sess, instanceId)
 	if err != nil {
 		log.Println(err)
 	}
 
+	//Terminate Session
 	err = TerminateSession(sess, *session.SessionId)
 	if err != nil {
 		log.Println(err)

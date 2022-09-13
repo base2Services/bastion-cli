@@ -208,7 +208,7 @@ func CliMain() {
 			},
 			{
 				Name:   "port-forward",
-				Usage:  "setup a remote port forward",
+				Usage:  "setup a remote port forward to an RDS instance",
 				Action: bastion.StartRemotePortForwardSession,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
@@ -224,10 +224,6 @@ func CliMain() {
 					&cli.StringFlag{
 						Name:  "local-port",
 						Usage: "local port",
-					},
-					&cli.StringFlag{
-						Name:  "remote-host",
-						Usage: "remote host",
 					},
 					&cli.StringFlag{
 						Name:    "instance-id",
