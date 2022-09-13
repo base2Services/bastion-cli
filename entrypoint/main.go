@@ -209,13 +209,8 @@ func CliMain() {
 			{
 				Name:   "port-forward",
 				Usage:  "setup a remote port forward to an RDS instance",
-				Action: bastion.StartRemotePortForwardSession,
+				Action: bastion.CmdStartRemotePortForwardSession,
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "region",
-						Aliases: []string{"r"},
-						Usage:   "AWS region",
-					},
 					&cli.StringFlag{
 						Name:     "remote-port",
 						Usage:    "remote port",
@@ -226,9 +221,85 @@ func CliMain() {
 						Usage: "local port",
 					},
 					&cli.StringFlag{
-						Name:    "instance-id",
-						Aliases: []string{"i"},
-						Usage:   "connect to a specific EC2 instance",
+						Name:  "remote-host",
+						Usage: "remote host",
+					},
+					&cli.StringFlag{
+						Name:    "region",
+						Aliases: []string{"r"},
+						Usage:   "AWS region",
+					},
+					&cli.StringFlag{
+						Name:    "profile",
+						Aliases: []string{"p"},
+						Usage:   "AWS profile",
+					},
+					&cli.StringFlag{
+						Name:  "ami",
+						Value: "amazon-linux",
+						Usage: "Amazon machine image (AMI) id or a SSM parameter path containing an AMI. Defaults to the latest amazon linux 2",
+					},
+					&cli.StringFlag{
+						Name:    "subnet-id",
+						Aliases: []string{"s"},
+						Usage:   "subnet-id to launch the bastion in, a selector will pop up if none provided",
+					},
+					&cli.StringFlag{
+						Name:    "security-group-id",
+						Aliases: []string{"sg"},
+						Usage:   "security-group-id to launch the bastion with, specify `default` to use the default security group. A selector will pop up if none provided",
+					},
+					&cli.StringFlag{
+						Name:    "instance-type",
+						Aliases: []string{"t"},
+						Value:   "t3.micro",
+						Usage:   "Amazon EC2 instance type",
+					},
+					&cli.BoolFlag{
+						Name:  "no-spot",
+						Usage: "set to use on-demand EC2 pricing",
+					},
+					&cli.StringFlag{
+						Name:  "efs",
+						Usage: "EFS file system id to mount to the bastion instance",
+					},
+					&cli.StringFlag{
+						Name:  "access-points",
+						Usage: "Comma-delimited list of access-point ids to mount to the bastion instance",
+					},
+					&cli.IntFlag{
+						Name:    "expire-after",
+						Aliases: []string{"ex"},
+						Value:   120,
+						Usage:   "bastion instance will terminate after this period of time",
+					},
+					&cli.BoolFlag{
+						Name:  "no-expire",
+						Usage: "disable expiry of the bastion instance",
+					},
+					&cli.BoolFlag{
+						Name:  "no-terminate",
+						Usage: "disable automatic termination of the bastion instance when the session disconnects",
+					},
+					&cli.BoolFlag{
+						Name:  "ssh",
+						Usage: "start a ssh session through AWS session manager, this will require a ssh public on the bastion instance",
+					},
+					&cli.StringFlag{
+						Name:    "ssh-key",
+						Aliases: []string{"k"},
+						Usage:   "add a public key to the authorized_users file in the bastions user home directory",
+					},
+					&cli.StringFlag{
+						Name:    "ssh-user",
+						Aliases: []string{"u"},
+						Value:   "ec2-user",
+						Usage:   "shh user",
+					},
+					&cli.StringFlag{
+						Name:    "ssh-opts",
+						Aliases: []string{"o"},
+						Usage:   "any additional ssh options such as tunnels '-L 3306:db.internal.example.com:3306'",
 					},
 				},
 			},
