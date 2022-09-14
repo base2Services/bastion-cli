@@ -259,14 +259,6 @@ func CliMain() {
 						Name:  "no-spot",
 						Usage: "set to use on-demand EC2 pricing",
 					},
-					&cli.StringFlag{
-						Name:  "efs",
-						Usage: "EFS file system id to mount to the bastion instance",
-					},
-					&cli.StringFlag{
-						Name:  "access-points",
-						Usage: "Comma-delimited list of access-point ids to mount to the bastion instance",
-					},
 					&cli.IntFlag{
 						Name:    "expire-after",
 						Aliases: []string{"ex"},
@@ -276,30 +268,6 @@ func CliMain() {
 					&cli.BoolFlag{
 						Name:  "no-expire",
 						Usage: "disable expiry of the bastion instance",
-					},
-					&cli.BoolFlag{
-						Name:  "no-terminate",
-						Usage: "disable automatic termination of the bastion instance when the session disconnects",
-					},
-					&cli.BoolFlag{
-						Name:  "ssh",
-						Usage: "start a ssh session through AWS session manager, this will require a ssh public on the bastion instance",
-					},
-					&cli.StringFlag{
-						Name:    "ssh-key",
-						Aliases: []string{"k"},
-						Usage:   "add a public key to the authorized_users file in the bastions user home directory",
-					},
-					&cli.StringFlag{
-						Name:    "ssh-user",
-						Aliases: []string{"u"},
-						Value:   "ec2-user",
-						Usage:   "shh user",
-					},
-					&cli.StringFlag{
-						Name:    "ssh-opts",
-						Aliases: []string{"o"},
-						Usage:   "any additional ssh options such as tunnels '-L 3306:db.internal.example.com:3306'",
 					},
 				},
 			},
