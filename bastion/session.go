@@ -21,6 +21,7 @@ import (
 )
 
 var sessionManagerPlugin = "session-manager-plugin"
+var description = "Bastion Port Forward Access"
 
 func CmdStartSession(c *cli.Context) error {
 	var (
