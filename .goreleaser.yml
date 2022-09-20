@@ -8,6 +8,9 @@ builds:
     ldflags:
       - -X github.com/base2Services/bastion-cli/entrypoint.Version={{.Env.VERSION}}
       - -X github.com/base2Services/bastion-cli/entrypoint.Build={{.Env.COMMIT}}
+    ignore:
+      - goos: windows
+        goarch: arm64
 archives:
   - format_overrides:
     - goos: windows
