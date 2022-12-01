@@ -12,4 +12,5 @@ require (
 	github.com/manifoldco/promptui v0.8.0
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/urfave/cli/v2 v2.3.0
+	golang.org/x/sys v0.0.0-20220907062415-87db552b00fd // indirect
 )
