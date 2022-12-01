@@ -34,39 +34,20 @@ func LookupUserIdentity(sess *session.Session) (string, error) {
 }
 
 func SetupAWSSession(region string, profile string) *session.Session {
-	if region != "" && profile != "" {
-		cfg := aws.Config{
-			Region: aws.String(region),
-		}
-
-		opts := session.Options{
-			Profile: profile,
-			Config:  cfg,
-		}
-
-		return session.Must(session.NewSessionWithOptions(opts))
-	}
+	cfg := aws.Config{}
 
 	if region != "" {
-		cfg := aws.Config{
-			Region: aws.String(region),
-		}
+		cfg.Region = aws.String(region)
+	}
 
-		opts := session.Options{
-			Config: cfg,
-		}
-
-		return session.Must(session.NewSessionWithOptions(opts))
+	opts := session.Options{
+		Config:            cfg,
+		SharedConfigState: session.SharedConfigEnable,
 	}
 
 	if profile != "" {
-		opts := session.Options{
-			Profile: profile,
-		}
-
-		return session.Must(session.NewSessionWithOptions(opts))
-
+		opts.Profile = profile
 	}
 
-	return session.Must(session.NewSession())
+	return session.Must(session.NewSessionWithOptions(opts))
 }
