@@ -30,8 +30,8 @@ Creates and manages a temporary on-demand bastion EC2 instance and connects to i
     * [Windows](#Windows)
         * [RDP](#RDP)
 * [Connecting to Existing Instances](#Connecting-to-Existing-Instances)
-* [Terminating an Instance](Terminating-an-Instance)
-* [Cancel Expiry of Bastion](Cancel-Expiry-of-Bastion)
+* [Terminating an Instance](#Terminating-an-Instance)
+* [Cancel Expiry of Bastion](#Cancel-Expiry-of-Bastion)
 
 
 ## About Bastion CLI
