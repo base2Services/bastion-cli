@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func StartEc2(id string, sess *session.Session, ami string, instanceProfile string, subnetId string, securitygroupId string, instanceType string, launchedBy string, userdata string, keyName string, spot bool) (string, error) {
+func StartEc2(id string, sess *session.Session, ami string, instanceProfile string, subnetId string, securitygroupId string, instanceType string, launchedBy string, userdata string, keyName string, spot bool, public bool) (string, error) {
 	client := ec2.New(sess)
 
 	input := &ec2.RunInstancesInput{
@@ -20,7 +20,6 @@ func StartEc2(id string, sess *session.Session, ami string, instanceProfile stri
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
 			Name: aws.String(instanceProfile),
 		},
-		SubnetId:                          aws.String(subnetId),
 		MinCount:                          aws.Int64(1),
 		MaxCount:                          aws.Int64(1),
 		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
@@ -46,9 +45,24 @@ func StartEc2(id string, sess *session.Session, ami string, instanceProfile stri
 		},
 	}
 
-	if securitygroupId != "default" {
-		input.SecurityGroupIds = []*string{
-			aws.String(securitygroupId),
+	if public {
+		input.NetworkInterfaces = []*ec2.InstanceNetworkInterfaceSpecification{
+			{
+				DeviceIndex:              aws.Int64(0),
+				AssociatePublicIpAddress: aws.Bool(true),
+				Groups: []*string{
+					aws.String(securitygroupId),
+				},
+				SubnetId: aws.String(subnetId),
+			},
+		}
+	} else {
+		input.SubnetId = aws.String(subnetId)
+
+		if securitygroupId != "default" {
+			input.SecurityGroupIds = []*string{
+				aws.String(securitygroupId),
+			}
 		}
 	}
 

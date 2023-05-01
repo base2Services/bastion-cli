@@ -59,6 +59,10 @@ func CliMain() {
 						Name:  "no-spot",
 						Usage: "set to use on-demand EC2 pricing",
 					},
+					&cli.BoolFlag{
+						Name:  "private",
+						Usage: "don't attach a public IP to the bastion",
+					},
 					&cli.StringFlag{
 						Name:  "efs",
 						Usage: "EFS file system id to mount to the bastion instance",
@@ -152,6 +156,14 @@ func CliMain() {
 					&cli.BoolFlag{
 						Name:  "no-terminate",
 						Usage: "disable automatic termination of the bastion instance when the session disconnects",
+					},
+					&cli.BoolFlag{
+						Name:  "no-spot",
+						Usage: "set to use on-demand EC2 pricing",
+					},
+					&cli.BoolFlag{
+						Name:  "private",
+						Usage: "don't attach a public IP to the bastion",
 					},
 				},
 			},
@@ -258,6 +270,10 @@ func CliMain() {
 					&cli.BoolFlag{
 						Name:  "no-spot",
 						Usage: "set to use on-demand EC2 pricing",
+					},
+					&cli.BoolFlag{
+						Name:  "private",
+						Usage: "don't attach a public IP to the bastion",
 					},
 					&cli.IntFlag{
 						Name:    "expire-after",

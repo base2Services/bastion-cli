@@ -74,6 +74,7 @@ func CreateBastion(c *cli.Context) (string, string, error) {
 		keyName           string
 		userdata          string
 		spot              bool
+		publicIpAddress   bool
 		bastionInstanceId string
 	)
 	//Check if theres a better way to create a default instance? eg: call CmdLaunchLinuxBastion with some spoofed cli context? but somehow return instance id
@@ -118,6 +119,11 @@ func CreateBastion(c *cli.Context) (string, string, error) {
 		spot = false
 	}
 
+	publicIpAddress = true
+	if c.Bool("private") {
+		publicIpAddress = false
+	}
+
 	subnetId = c.String("subnet-id")
 	if subnetId == "" {
 		subnets, err := GetSubnets(sess)
@@ -147,7 +153,7 @@ func CreateBastion(c *cli.Context) (string, string, error) {
 
 	userdata = BuildLinuxUserdata(sshKey, c.String("ssh-user"), expire, expireAfter, c.String("efs"), c.String("access-points"))
 
-	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot)
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot, publicIpAddress)
 	if err != nil {
 		return "", "", err
 	}
@@ -170,6 +176,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 		keyName           string
 		userdata          string
 		spot              bool
+		publicIpAddress   bool
 		bastionInstanceId string
 	)
 
@@ -196,6 +203,11 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 	spot = true
 	if c.Bool("no-spot") {
 		spot = false
+	}
+
+	publicIpAddress = true
+	if c.Bool("private") {
+		publicIpAddress = false
 	}
 
 	subnetId = c.String("subnet-id")
@@ -245,7 +257,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 
 	userdata = BuildWindowsUserdata()
 
-	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot)
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot, publicIpAddress)
 	if err != nil {
 		return err
 	}
