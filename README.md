@@ -30,7 +30,8 @@ Creates and manages a temporary on-demand bastion EC2 instance and connects to i
     * [Windows](#Windows)
         * [RDP](#RDP)
 * [Connecting to Existing Instances](#Connecting-to-Existing-Instances)
-* [Terminating an Instance](Terminating-an-Instance)
+* [Terminating an Instance](#Terminating-an-Instance)
+* [Cancel Expiry of Bastion](#Cancel-Expiry-of-Bastion)
 
 
 ## About Bastion CLI
@@ -218,3 +219,11 @@ bastion terminate --session-id <session-id>
 ```
 
 this will cleanup any additional resources that may have been created when launching the bastion instance
+
+## Cancel Expiry of Bastion
+
+By default linux bastions launched expire after 120 minutes. If you've launched your bastion and wish to cancel the expiry you can by cancelling the future halt operation with the `atrm` command as the root user.
+
+```sh
+atrm 1
+```
