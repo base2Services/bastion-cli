@@ -30,6 +30,7 @@ Creates and manages a temporary on-demand bastion EC2 instance and connects to i
     * [Windows](#Windows)
         * [RDP](#RDP)
 * [Connecting to Existing Instances](#Connecting-to-Existing-Instances)
+* [Remote Port Forwarding](#Remote-Port-Forwarding)
 * [Terminating an Instance](#Terminating-an-Instance)
 * [Cancel Expiry of Bastion](#Cancel-Expiry-of-Bastion)
 
@@ -209,6 +210,18 @@ bastion start-session
 ```
 
 This will discover all available EC2 instances that can be connected to. You can also use this to connect to SSH and RDP sessions.
+
+## Remote Port Forwarding
+
+Bastion provides the user the capabality to remote port forward to an instance via a configurable bastion instance. The feature provides inbuilt support to connect to RDS instances, however the ability to connect to other instance types such as EC2 exist via the ‘–remote host’ flag.
+
+The command to create a remote port forward session is as follows.
+
+```sh
+bastion port-forward --remote-port 5432 --region ap-southeast-2
+```
+
+A detailed walkthrough of creating the session can be found [here](https://releases.prod.tools.aws.base2.services/posts/bastion-cli-portforwarding/bastion-cli-port-forwarding.html).
 
 ## Terminating an Instance
 
