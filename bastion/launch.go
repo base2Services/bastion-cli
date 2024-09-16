@@ -191,7 +191,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 		publicIpAddress   bool
 		bastionInstanceId string
 		volumeEncryption  bool
-		volumeType		  string
+		volumeType        string
 	)
 
 	id = GenerateSessionId()
