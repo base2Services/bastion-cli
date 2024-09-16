@@ -173,6 +173,14 @@ func CliMain() {
 						Name:  "private",
 						Usage: "don't attach a public IP to the bastion",
 					},
+					&cli.BoolFlag{
+						Name:  "volume-encryption",
+						Usage: "enable volume encryption",
+					},
+					&cli.StringFlag{
+						Name:  "volume-type",
+						Usage: "specify volume volume type [gp2, gp3, io2, io1]",
+					},
 				},
 			},
 			{

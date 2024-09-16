@@ -231,6 +231,10 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 
 	volumeType = c.String("volume-type")
 
+	if volumeType == "" {
+		volumeType = "gp2" //Default volume-type
+	}
+
 	subnetId = c.String("subnet-id")
 	if subnetId == "" {
 		subnets, err := GetSubnets(sess)
