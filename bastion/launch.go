@@ -77,7 +77,7 @@ func CreateBastion(c *cli.Context) (string, string, error) {
 		publicIpAddress   bool
 		bastionInstanceId string
 		volumeEncryption  bool
-		volumeType		  string
+		volumeType        string
 	)
 	//Check if theres a better way to create a default instance? eg: call CmdLaunchLinuxBastion with some spoofed cli context? but somehow return instance id
 
@@ -259,7 +259,6 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 	}
 
 	instanceType = c.String("instance-type")
-	log.Printf("Encryption  %v minutes", volumeEncryption)
 	if c.Bool("rdp") {
 		log.Println("creating keypair for rdp password decryption ...")
 
