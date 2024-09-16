@@ -76,6 +76,8 @@ func CreateBastion(c *cli.Context) (string, string, error) {
 		spot              bool
 		publicIpAddress   bool
 		bastionInstanceId string
+		volumeEncryption  bool
+		volumeType		  string
 	)
 	//Check if theres a better way to create a default instance? eg: call CmdLaunchLinuxBastion with some spoofed cli context? but somehow return instance id
 
@@ -124,6 +126,16 @@ func CreateBastion(c *cli.Context) (string, string, error) {
 		publicIpAddress = false
 	}
 
+	volumeEncryption = false
+	if c.Bool("volume-encryption") {
+		volumeEncryption = true
+	}
+	volumeType = c.String("volume-type")
+
+	if volumeType == "" {
+		volumeType = "gp2" //Default volume-type
+	}
+	
 	subnetId = c.String("subnet-id")
 	if subnetId == "" {
 		subnets, err := GetSubnets(sess)
@@ -153,7 +165,7 @@ func CreateBastion(c *cli.Context) (string, string, error) {
 
 	userdata = BuildLinuxUserdata(sshKey, c.String("ssh-user"), expire, expireAfter, c.String("efs"), c.String("access-points"))
 
-	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot, publicIpAddress)
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot, publicIpAddress, volumeEncryption, volumeType)
 	if err != nil {
 		return "", "", err
 	}
@@ -178,6 +190,8 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 		spot              bool
 		publicIpAddress   bool
 		bastionInstanceId string
+		volumeEncryption  bool
+		volumeType		  string
 	)
 
 	id = GenerateSessionId()
@@ -210,6 +224,13 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 		publicIpAddress = false
 	}
 
+	volumeEncryption = false
+	if c.Bool("volume-encryption") {
+		volumeEncryption = true
+	}
+
+	volumeType = c.String("volume-type")
+
 	subnetId = c.String("subnet-id")
 	if subnetId == "" {
 		subnets, err := GetSubnets(sess)
@@ -238,7 +259,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 	}
 
 	instanceType = c.String("instance-type")
-
+	log.Printf("Encryption  %v minutes", volumeEncryption)
 	if c.Bool("rdp") {
 		log.Println("creating keypair for rdp password decryption ...")
 
@@ -257,7 +278,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 
 	userdata = BuildWindowsUserdata()
 
-	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot, publicIpAddress)
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot, publicIpAddress, volumeEncryption, volumeType)
 	if err != nil {
 		return err
 	}
