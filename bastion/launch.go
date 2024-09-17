@@ -126,9 +126,9 @@ func CreateBastion(c *cli.Context) (string, string, error) {
 		publicIpAddress = false
 	}
 
-	volumeEncryption = false
+	volumeEncryption = true
 	if c.Bool("volume-encryption") {
-		volumeEncryption = true
+		volumeEncryption = false
 	}
 	volumeType = c.String("volume-type")
 
@@ -224,9 +224,9 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 		publicIpAddress = false
 	}
 
-	volumeEncryption = false
+	volumeEncryption = true
 	if c.Bool("volume-encryption") {
-		volumeEncryption = true
+		volumeEncryption = false
 	}
 
 	volumeType = c.String("volume-type")
