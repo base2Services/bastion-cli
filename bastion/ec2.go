@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func StartEc2(id string, sess *session.Session, ami string, instanceProfile string, subnetId string, securitygroupId string, instanceType string, launchedBy string, userdata string, keyName string, spot bool, public bool) (string, error) {
+func StartEc2(id string, sess *session.Session, ami string, instanceProfile string, subnetId string, securitygroupId string, instanceType string, launchedBy string, userdata string, keyName string, spot bool, public bool, volumeEncryption bool, volumeType string) (string, error) {
 	client := ec2.New(sess)
 
 	input := &ec2.RunInstancesInput{
@@ -44,6 +44,24 @@ func StartEc2(id string, sess *session.Session, ami string, instanceProfile stri
 			},
 		},
 	}
+
+
+
+	blockDeviceMapping := &ec2.BlockDeviceMapping{
+		DeviceName: aws.String("/dev/xvda"), // Using default mapping
+		Ebs: &ec2.EbsBlockDevice{
+			VolumeSize:          aws.Int64(8),                 // Default size GiB; 
+			VolumeType:          aws.String(volumeType),
+			Encrypted:           aws.Bool(volumeEncryption),
+			DeleteOnTermination: aws.Bool(true),               // Default behavior
+		},
+	}
+
+	input.BlockDeviceMappings = []*ec2.BlockDeviceMapping{
+		blockDeviceMapping,
+	}
+	
+
 
 	if public {
 		input.NetworkInterfaces = []*ec2.InstanceNetworkInterfaceSpecification{
