@@ -11,8 +11,8 @@ import (
 )
 
 var amis = map[string]string{
-	"amazon-linux":       "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2",
-	"amazon-linux-arm64": "/aws/service/ami-amazon-linux-latest/amzn2-ami-kernel-5.10-hvm-arm64-gp2",
+	"amazon-linux":       "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64",
+	"amazon-linux-arm64": "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-arm64",
 	"windows":            "/aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base",
 }
 
