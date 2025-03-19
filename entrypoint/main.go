@@ -105,6 +105,11 @@ func CliMain() {
 						Aliases: []string{"o"},
 						Usage:   "any additional ssh options such as tunnels '-L 3306:db.internal.example.com:3306'",
 					},
+					&cli.Int64Flag{
+						Name:  "volume-size",
+						Value: 8,
+						Usage: "specify volume volume size in GB",
+					},
 					&cli.BoolFlag{
 						Name:  "volume-encryption",
 						Usage: "enable volume encryption",
