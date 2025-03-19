@@ -76,6 +76,7 @@ func CreateBastion(c *cli.Context) (string, string, error) {
 		spot              bool
 		publicIpAddress   bool
 		bastionInstanceId string
+		volumeSize        int64
 		volumeEncryption  bool
 		volumeType        string
 	)
@@ -126,16 +127,21 @@ func CreateBastion(c *cli.Context) (string, string, error) {
 		publicIpAddress = false
 	}
 
+	volumeSize = 8
+	if c.IsSet("volume-size") {
+		volumeSize = c.Int64("volume-size") //Default volume-size
+	}
+
 	volumeEncryption = true
 	if c.Bool("volume-encryption") {
 		volumeEncryption = false
 	}
-	volumeType = c.String("volume-type")
 
+	volumeType = c.String("volume-type")
 	if volumeType == "" {
 		volumeType = "gp2" //Default volume-type
 	}
-	
+
 	subnetId = c.String("subnet-id")
 	if subnetId == "" {
 		subnets, err := GetSubnets(sess)
@@ -165,7 +171,7 @@ func CreateBastion(c *cli.Context) (string, string, error) {
 
 	userdata = BuildLinuxUserdata(sshKey, c.String("ssh-user"), expire, expireAfter, c.String("efs"), c.String("access-points"))
 
-	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot, publicIpAddress, volumeEncryption, volumeType)
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot, publicIpAddress, volumeSize, volumeEncryption, volumeType)
 	if err != nil {
 		return "", "", err
 	}
@@ -190,6 +196,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 		spot              bool
 		publicIpAddress   bool
 		bastionInstanceId string
+		volumeSize        int64
 		volumeEncryption  bool
 		volumeType        string
 	)
@@ -224,13 +231,17 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 		publicIpAddress = false
 	}
 
+	volumeSize = 8
+	if c.IsSet("volume-size") {
+		volumeSize = c.Int64("volume-size") //Default volume-size
+	}
+
 	volumeEncryption = true
 	if c.Bool("volume-encryption") {
 		volumeEncryption = false
 	}
 
 	volumeType = c.String("volume-type")
-
 	if volumeType == "" {
 		volumeType = "gp2" //Default volume-type
 	}
@@ -281,7 +292,7 @@ func CmdLaunchWindowsBastion(c *cli.Context) error {
 
 	userdata = BuildWindowsUserdata()
 
-	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot, publicIpAddress, volumeEncryption, volumeType)
+	bastionInstanceId, err = StartEc2(id, sess, ami, instanceProfile, subnetId, securitygroupId, instanceType, launchedBy, userdata, keyName, spot, publicIpAddress, volumeSize, volumeEncryption, volumeType)
 	if err != nil {
 		return err
 	}

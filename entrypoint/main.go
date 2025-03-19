@@ -105,13 +105,18 @@ func CliMain() {
 						Aliases: []string{"o"},
 						Usage:   "any additional ssh options such as tunnels '-L 3306:db.internal.example.com:3306'",
 					},
+					&cli.Int64Flag{
+						Name:  "volume-size",
+						Value: 8,
+						Usage: "specify volume size in GB",
+					},
 					&cli.BoolFlag{
 						Name:  "volume-encryption",
 						Usage: "enable volume encryption",
 					},
 					&cli.StringFlag{
 						Name:  "volume-type",
-						Usage: "specify volume volume type [gp2, gp3, io2, io1]",
+						Usage: "specify volume type [gp2, gp3, io2, io1]",
 					},
 				},
 			},
@@ -173,13 +178,18 @@ func CliMain() {
 						Name:  "private",
 						Usage: "don't attach a public IP to the bastion",
 					},
+					&cli.Int64Flag{
+						Name:  "volume-size",
+						Value: 8,
+						Usage: "specify volume size in GB",
+					},
 					&cli.BoolFlag{
 						Name:  "volume-encryption",
 						Usage: "enable volume encryption",
 					},
 					&cli.StringFlag{
 						Name:  "volume-type",
-						Usage: "specify volume volume type [gp2, gp3, io2, io1]",
+						Usage: "specify volume type [gp2, gp3, io2, io1]",
 					},
 				},
 			},
