@@ -108,7 +108,7 @@ func CliMain() {
 					&cli.Int64Flag{
 						Name:  "volume-size",
 						Value: 8,
-						Usage: "specify volume volume size in GB",
+						Usage: "specify volume size in GB",
 					},
 					&cli.BoolFlag{
 						Name:  "volume-encryption",
@@ -116,7 +116,7 @@ func CliMain() {
 					},
 					&cli.StringFlag{
 						Name:  "volume-type",
-						Usage: "specify volume volume type [gp2, gp3, io2, io1]",
+						Usage: "specify volume type [gp2, gp3, io2, io1]",
 					},
 				},
 			},
@@ -178,13 +178,18 @@ func CliMain() {
 						Name:  "private",
 						Usage: "don't attach a public IP to the bastion",
 					},
+					&cli.Int64Flag{
+						Name:  "volume-size",
+						Value: 8,
+						Usage: "specify volume size in GB",
+					},
 					&cli.BoolFlag{
 						Name:  "volume-encryption",
 						Usage: "enable volume encryption",
 					},
 					&cli.StringFlag{
 						Name:  "volume-type",
-						Usage: "specify volume volume type [gp2, gp3, io2, io1]",
+						Usage: "specify volume type [gp2, gp3, io2, io1]",
 					},
 				},
 			},
