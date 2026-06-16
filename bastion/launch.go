@@ -412,7 +412,7 @@ func BuildLinuxUserdata(sshKey string, sshUser string, expire bool, expireAfter 
 
 	if expire {
 		log.Printf("Bastion will expire after %v minutes", expireAfter)
-		userdata = append(userdata, fmt.Sprintf("echo \"sudo halt\" | at now + %d minutes", expireAfter))
+		userdata = append(userdata, fmt.Sprintf("echo \"sudo shutdown -h now\" | at now + %d minutes", expireAfter))
 	}
 
 	return strings.Join(userdata, "")
