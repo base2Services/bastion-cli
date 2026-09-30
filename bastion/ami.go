@@ -34,17 +34,32 @@ func GetAndValidateAmi(sess *session.Session, input string, instance_type string
 		return ami, nil
 	}
 
-	input, err := GetArchitecture(sess, instance_type)
+	parameter, err := amiParameterForAlias(input, func() (string, error) {
+		return GetArchitecture(sess, instance_type)
+	})
 	if err != nil {
 		return "", err
 	}
 
-	if parameter, ok := amis[input]; ok {
-		ami, err := GetAmiFromParameter(sess, parameter)
+	return GetAmiFromParameter(sess, parameter)
+}
+
+// amiParameterForAlias returns the SSM parameter path for a named AMI alias.
+// Amazon Linux aliases (and unrecognised names) are resolved to the image
+// matching the instance type's architecture via detectArch. Other named
+// aliases, such as "windows", map directly to their own parameter.
+func amiParameterForAlias(input string, detectArch func() (string, error)) (string, error) {
+	alias := input
+	if _, known := amis[input]; !known || strings.HasPrefix(input, "amazon-linux") {
+		arch, err := detectArch()
 		if err != nil {
 			return "", err
 		}
-		return ami, nil
+		alias = arch
+	}
+
+	if parameter, ok := amis[alias]; ok {
+		return parameter, nil
 	}
 	return "", errors.New("unable to find ami")
 }
